@@ -9,6 +9,19 @@ import (
 	"context"
 )
 
+const countTenants = `-- name: CountTenants :one
+SELECT COUNT(*)
+FROM tenants
+WHERE deleted_at IS NULL
+`
+
+func (q *Queries) CountTenants(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countTenants)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createTenant = `-- name: CreateTenant :one
 INSERT INTO tenants (
     name, slug, status
@@ -26,6 +39,180 @@ type CreateTenantParams struct {
 
 func (q *Queries) CreateTenant(ctx context.Context, arg CreateTenantParams) (Tenant, error) {
 	row := q.db.QueryRow(ctx, createTenant, arg.Name, arg.Slug, arg.Status)
+	var i Tenant
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Slug,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const deleteTenant = `-- name: DeleteTenant :one
+UPDATE tenants
+SET
+    deleted_at = NOW(),
+    updated_at = NOW()
+WHERE id = $1
+  AND deleted_at IS NULL
+RETURNING id, name, slug, status, created_at, updated_at, deleted_at
+`
+
+func (q *Queries) DeleteTenant(ctx context.Context, id int64) (Tenant, error) {
+	row := q.db.QueryRow(ctx, deleteTenant, id)
+	var i Tenant
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Slug,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getTenantByID = `-- name: GetTenantByID :one
+SELECT id, name, slug, status, created_at, updated_at, deleted_at
+FROM tenants
+WHERE id = $1
+  AND deleted_at IS NULL
+`
+
+func (q *Queries) GetTenantByID(ctx context.Context, id int64) (Tenant, error) {
+	row := q.db.QueryRow(ctx, getTenantByID, id)
+	var i Tenant
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Slug,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getTenantBySlug = `-- name: GetTenantBySlug :one
+SELECT id, name, slug, status, created_at, updated_at, deleted_at
+FROM tenants
+WHERE slug = $1
+  AND deleted_at IS NULL
+`
+
+func (q *Queries) GetTenantBySlug(ctx context.Context, slug string) (Tenant, error) {
+	row := q.db.QueryRow(ctx, getTenantBySlug, slug)
+	var i Tenant
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Slug,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const listTenants = `-- name: ListTenants :many
+SELECT id, name, slug, status, created_at, updated_at, deleted_at
+FROM tenants
+WHERE deleted_at IS NULL
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type ListTenantsParams struct {
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) ListTenants(ctx context.Context, arg ListTenantsParams) ([]Tenant, error) {
+	rows, err := q.db.Query(ctx, listTenants, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Tenant
+	for rows.Next() {
+		var i Tenant
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Slug,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const restoreTenant = `-- name: RestoreTenant :one
+UPDATE tenants
+SET
+    deleted_at = NULL,
+    updated_at = NOW()
+WHERE id = $1
+  AND deleted_at IS NOT NULL
+RETURNING id, name, slug, status, created_at, updated_at, deleted_at
+`
+
+func (q *Queries) RestoreTenant(ctx context.Context, id int64) (Tenant, error) {
+	row := q.db.QueryRow(ctx, restoreTenant, id)
+	var i Tenant
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Slug,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const updateTenant = `-- name: UpdateTenant :one
+UPDATE tenants
+SET
+    name = $2,
+    slug = $3,
+    status = $4,
+    updated_at = NOW()
+WHERE id = $1
+  AND deleted_at IS NULL
+RETURNING id, name, slug, status, created_at, updated_at, deleted_at
+`
+
+type UpdateTenantParams struct {
+	ID     int64
+	Name   string
+	Slug   string
+	Status string
+}
+
+func (q *Queries) UpdateTenant(ctx context.Context, arg UpdateTenantParams) (Tenant, error) {
+	row := q.db.QueryRow(ctx, updateTenant,
+		arg.ID,
+		arg.Name,
+		arg.Slug,
+		arg.Status,
+	)
 	var i Tenant
 	err := row.Scan(
 		&i.ID,
