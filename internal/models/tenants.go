@@ -29,7 +29,28 @@ func ConvertTenantModel(tenant db.Tenant) Tenant {
 	}
 }
 
+func ConvertTenantModels(tenants []db.Tenant) []Tenant {
+	result := make([]Tenant, 0, len(tenants))
+	for _, tenant := range tenants {
+		result = append(result, ConvertTenantModel(tenant))
+	}
+	return result
+}
+
 type CreateTenantReq struct {
+	Name   string `json:"name"`
+	Slug   string `json:"slug"`
+	Status string `json:"status"`
+}
+
+type ListTenantsReq struct {
+	Page   int `json:"page"`
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
+}
+
+type UpdateTenantReq struct {
+	ID     int64  `json:"id"`
 	Name   string `json:"name"`
 	Slug   string `json:"slug"`
 	Status string `json:"status"`
