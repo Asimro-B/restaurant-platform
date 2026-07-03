@@ -70,6 +70,38 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const deleteUser = `-- name: DeleteUser :one
+DELETE FROM users
+WHERE id = $1
+  AND tenant_id = $2
+RETURNING id, tenant_id, email, password_hash, role, first_name, last_name, location, mobile_phone, phone, created_at, updated_at
+`
+
+type DeleteUserParams struct {
+	ID       int64
+	TenantID int64
+}
+
+func (q *Queries) DeleteUser(ctx context.Context, arg DeleteUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, deleteUser, arg.ID, arg.TenantID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Email,
+		&i.PasswordHash,
+		&i.Role,
+		&i.FirstName,
+		&i.LastName,
+		&i.Location,
+		&i.MobilePhone,
+		&i.Phone,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT id, tenant_id, email, password_hash, role, first_name, last_name, location, mobile_phone, phone, created_at, updated_at FROM users WHERE email=$1 AND tenant_id=$2
 `
@@ -81,6 +113,183 @@ type GetUserByEmailParams struct {
 
 func (q *Queries) GetUserByEmail(ctx context.Context, arg GetUserByEmailParams) (User, error) {
 	row := q.db.QueryRow(ctx, getUserByEmail, arg.Email, arg.TenantID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Email,
+		&i.PasswordHash,
+		&i.Role,
+		&i.FirstName,
+		&i.LastName,
+		&i.Location,
+		&i.MobilePhone,
+		&i.Phone,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUserByID = `-- name: GetUserByID :one
+SELECT id, tenant_id, email, password_hash, role, first_name, last_name, location, mobile_phone, phone, created_at, updated_at
+FROM users
+WHERE id = $1
+  AND tenant_id = $2
+`
+
+type GetUserByIDParams struct {
+	ID       int64
+	TenantID int64
+}
+
+func (q *Queries) GetUserByID(ctx context.Context, arg GetUserByIDParams) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByID, arg.ID, arg.TenantID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Email,
+		&i.PasswordHash,
+		&i.Role,
+		&i.FirstName,
+		&i.LastName,
+		&i.Location,
+		&i.MobilePhone,
+		&i.Phone,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const listUsers = `-- name: ListUsers :many
+SELECT id, tenant_id, email, password_hash, role, first_name, last_name, location, mobile_phone, phone, created_at, updated_at
+FROM users
+WHERE tenant_id = $1
+  AND (
+    $2::text = ''
+    OR email ILIKE '%' || $2::text || '%'
+    OR COALESCE(first_name, '') ILIKE '%' || $2::text || '%'
+    OR COALESCE(last_name, '') ILIKE '%' || $2::text || '%'
+    OR COALESCE(location, '') ILIKE '%' || $2::text || '%'
+    OR COALESCE(mobile_phone, '') ILIKE '%' || $2::text || '%'
+    OR COALESCE(phone, '') ILIKE '%' || $2::text || '%'
+  )
+  AND (
+    $3::text = ''
+    OR role = $3::text
+  )
+ORDER BY
+    CASE WHEN $4::text = 'email' AND $5::text = 'asc' THEN email END ASC,
+    CASE WHEN $4::text = 'email' AND $5::text = 'desc' THEN email END DESC,
+    CASE WHEN $4::text = 'role' AND $5::text = 'asc' THEN role END ASC,
+    CASE WHEN $4::text = 'role' AND $5::text = 'desc' THEN role END DESC,
+    CASE WHEN $4::text = 'first_name' AND $5::text = 'asc' THEN first_name END ASC,
+    CASE WHEN $4::text = 'first_name' AND $5::text = 'desc' THEN first_name END DESC,
+    CASE WHEN $4::text = 'created_at' AND $5::text = 'asc' THEN created_at END ASC,
+    CASE WHEN $4::text = 'created_at' AND $5::text = 'desc' THEN created_at END DESC,
+    CASE WHEN $4::text = 'updated_at' AND $5::text = 'asc' THEN updated_at END ASC,
+    CASE WHEN $4::text = 'updated_at' AND $5::text = 'desc' THEN updated_at END DESC,
+    created_at DESC,
+    id DESC
+LIMIT $7 OFFSET $6
+`
+
+type ListUsersParams struct {
+	TenantID    int64
+	Search      string
+	Role        string
+	SortBy      string
+	SortOrder   string
+	OffsetCount int32
+	LimitCount  int32
+}
+
+func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error) {
+	rows, err := q.db.Query(ctx, listUsers,
+		arg.TenantID,
+		arg.Search,
+		arg.Role,
+		arg.SortBy,
+		arg.SortOrder,
+		arg.OffsetCount,
+		arg.LimitCount,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.Email,
+			&i.PasswordHash,
+			&i.Role,
+			&i.FirstName,
+			&i.LastName,
+			&i.Location,
+			&i.MobilePhone,
+			&i.Phone,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateUser = `-- name: UpdateUser :one
+UPDATE users
+SET
+    email = $3,
+    password_hash = $4,
+    role = $5,
+    first_name = $6,
+    last_name = $7,
+    location = $8,
+    mobile_phone = $9,
+    phone = $10,
+    updated_at = NOW()
+WHERE id = $1
+  AND tenant_id = $2
+RETURNING id, tenant_id, email, password_hash, role, first_name, last_name, location, mobile_phone, phone, created_at, updated_at
+`
+
+type UpdateUserParams struct {
+	ID           int64
+	TenantID     int64
+	Email        string
+	PasswordHash string
+	Role         string
+	FirstName    pgtype.Text
+	LastName     pgtype.Text
+	Location     pgtype.Text
+	MobilePhone  pgtype.Text
+	Phone        pgtype.Text
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUser,
+		arg.ID,
+		arg.TenantID,
+		arg.Email,
+		arg.PasswordHash,
+		arg.Role,
+		arg.FirstName,
+		arg.LastName,
+		arg.Location,
+		arg.MobilePhone,
+		arg.Phone,
+	)
 	var i User
 	err := row.Scan(
 		&i.ID,
