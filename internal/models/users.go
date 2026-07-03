@@ -41,6 +41,14 @@ func ConvertUserModel(user db.User) User {
 	}
 }
 
+func ConvertUserModels(users []db.User) []User {
+	result := make([]User, 0, len(users))
+	for _, user := range users {
+		result = append(result, ConvertUserModel(user))
+	}
+	return result
+}
+
 type CreateUserReq struct {
 	TenantID     int64  `json:"tenant_id"`
 	Email        string `json:"email"`
@@ -63,4 +71,27 @@ func ToPGText(value string) pgtype.Text {
 type GetUserByEmailReq struct {
 	Email    string `json:"email"`
 	TenantID int    `json:"tenant_id"`
+}
+
+type ListUsersReq struct {
+	TenantID    int64  `json:"tenant_id"`
+	Search      string `json:"search"`
+	Role        string `json:"role"`
+	SortBy      string `json:"sort_by"`
+	SortOrder   string `json:"sort_order"`
+	LimitCount  int32  `json:"limit_count"`
+	OffsetCount int32  `json:"offset_count"`
+}
+
+type UpdateUserReq struct {
+	ID           int64  `json:"id"`
+	TenantID     int64  `json:"tenant_id"`
+	Email        string `json:"email"`
+	PasswordHash string `json:"password_hash"`
+	Role         string `json:"role"`
+	FirstName    string `json:"first_name"`
+	LastName     string `json:"last_name"`
+	Location     string `json:"location"`
+	MobilePhone  string `json:"mobile_phone"`
+	Phone        string `json:"phone"`
 }
