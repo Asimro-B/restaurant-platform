@@ -71,8 +71,7 @@ WHERE id = $1
   AND tenant_id = $2
 RETURNING *;
 
--- name: DeleteUser :one
+-- name: DeleteUser :exec
 DELETE FROM users
 WHERE id = $1
-  AND tenant_id = $2
-RETURNING *;
+  AND tenant_id = $2;

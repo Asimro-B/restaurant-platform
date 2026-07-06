@@ -70,11 +70,10 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
-const deleteUser = `-- name: DeleteUser :one
+const deleteUser = `-- name: DeleteUser :exec
 DELETE FROM users
 WHERE id = $1
   AND tenant_id = $2
-RETURNING id, tenant_id, email, password_hash, role, first_name, last_name, location, mobile_phone, phone, created_at, updated_at
 `
 
 type DeleteUserParams struct {
@@ -82,24 +81,9 @@ type DeleteUserParams struct {
 	TenantID int64
 }
 
-func (q *Queries) DeleteUser(ctx context.Context, arg DeleteUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, deleteUser, arg.ID, arg.TenantID)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.TenantID,
-		&i.Email,
-		&i.PasswordHash,
-		&i.Role,
-		&i.FirstName,
-		&i.LastName,
-		&i.Location,
-		&i.MobilePhone,
-		&i.Phone,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
+func (q *Queries) DeleteUser(ctx context.Context, arg DeleteUserParams) error {
+	_, err := q.db.Exec(ctx, deleteUser, arg.ID, arg.TenantID)
+	return err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
