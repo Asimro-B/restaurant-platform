@@ -22,6 +22,13 @@ func Initiate() {
 		panic(err)
 	}
 
+	temporalClient, err := InitiateTemporalClient()
+	if err != nil {
+		logger.Log.Error("failed to initialize temporal", "error", err)
+		panic(err)
+	}
+	defer temporalClient.Close()
+
 	// service
 	mod := module.NewModule(db)
 
