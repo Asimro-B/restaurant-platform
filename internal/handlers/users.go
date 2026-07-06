@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"restaurant-platform/internal/ctxutil"
 	"restaurant-platform/internal/logger"
 	"restaurant-platform/internal/models"
 	"restaurant-platform/utils"
@@ -52,9 +53,10 @@ func (h *WebHandler) CreateUser(c *gin.Context) {
 func (h *WebHandler) ListUsers(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	tenantID, err := parseTenantID(c)
+	tenantCtx, err := ctxutil.GetTenantFromContext(c)
 	if err != nil {
-		models.ERROR(c, http.StatusBadRequest, err)
+		logger.Error("Failed to get the user from the context: ", err)
+		models.ERROR(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -72,7 +74,7 @@ func (h *WebHandler) ListUsers(c *gin.Context) {
 
 	offset := (page - 1) * limit
 	users, err := h.module.ListUsers(ctx, models.ListUsersReq{
-		TenantID:    tenantID,
+		TenantID:    tenantCtx.TenantID,
 		Search:      c.Query("search"),
 		Role:        c.Query("role"),
 		SortBy:      queryDefault(c, "sort_by", "created_at"),
@@ -102,9 +104,10 @@ func (h *WebHandler) ListUsers(c *gin.Context) {
 func (h *WebHandler) GetUserByEmail(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	tenantID, err := parseTenantID(c)
+	tenantCtx, err := ctxutil.GetTenantFromContext(c)
 	if err != nil {
-		models.ERROR(c, http.StatusBadRequest, err)
+		logger.Error("Failed to get the user from the context: ", err)
+		models.ERROR(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -114,7 +117,7 @@ func (h *WebHandler) GetUserByEmail(c *gin.Context) {
 		return
 	}
 
-	req.TenantID = int(tenantID)
+	req.TenantID = int(tenantCtx.TenantID)
 
 	user, err := h.module.GetUserByEmail(ctx, req.Email, int64(req.TenantID))
 	if err != nil {
@@ -132,13 +135,22 @@ func (h *WebHandler) GetUserByEmail(c *gin.Context) {
 func (h *WebHandler) GetUserByID(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	tenantID, userID, err := parseUserRouteIDs(c)
+	userIDStr := c.Param("userID")
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil {
+		logger.Error("Not Valid user id: ", err)
 		models.ERROR(c, http.StatusBadRequest, err)
 		return
 	}
 
-	user, err := h.module.GetUserByID(ctx, userID, tenantID)
+	tenantCtx, err := ctxutil.GetTenantFromContext(c)
+	if err != nil {
+		logger.Error("Failed to get the user from the context: ", err)
+		models.ERROR(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	user, err := h.module.GetUserByID(ctx, userID, tenantCtx.TenantID)
 	if err != nil {
 		handleUserError(c, err, "failed to get user by id")
 		return
@@ -153,9 +165,19 @@ func (h *WebHandler) GetUserByID(c *gin.Context) {
 func (h *WebHandler) UpdateUser(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	tenantID, userID, err := parseUserRouteIDs(c)
+	userIDStr := c.Param("userID")
+
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil {
+		logger.Error("User id not valid: ", err)
 		models.ERROR(c, http.StatusBadRequest, err)
+		return
+	}
+
+	tenantCtx, err := ctxutil.GetTenantFromContext(c)
+	if err != nil {
+		logger.Error("Failed to get the user from the context: ", err)
+		models.ERROR(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -165,7 +187,7 @@ func (h *WebHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 	req.ID = userID
-	req.TenantID = tenantID
+	req.TenantID = tenantCtx.TenantID
 
 	hashedPassword, err := utils.HashPassword(req.PasswordHash)
 	if err != nil {
@@ -188,21 +210,30 @@ func (h *WebHandler) UpdateUser(c *gin.Context) {
 
 func (h *WebHandler) DeleteUser(c *gin.Context) {
 	ctx := c.Request.Context()
+	userIDStr := c.Param("userID")
 
-	tenantID, userID, err := parseUserRouteIDs(c)
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil {
+		logger.Error("User id not valid: ", err)
 		models.ERROR(c, http.StatusBadRequest, err)
 		return
 	}
 
-	user, err := h.module.DeleteUser(ctx, userID, tenantID)
+	tenantCtx, err := ctxutil.GetTenantFromContext(c)
+	if err != nil {
+		logger.Error("Failed to get the user from the context: ", err)
+		models.ERROR(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	err = h.module.DeleteUser(ctx, userID, tenantCtx.TenantID)
 	if err != nil {
 		handleUserError(c, err, "failed to delete user")
 		return
 	}
 
 	models.JSON(c, http.StatusOK, models.Response{
-		Data:  user,
+		Data:  "User deleted Successfully",
 		Error: nil,
 	})
 }
