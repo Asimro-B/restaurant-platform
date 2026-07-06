@@ -91,15 +91,13 @@ func (m *WebModule) UpdateUser(ctx context.Context, req models.UpdateUserReq) (m
 	return result, nil
 }
 
-func (m *WebModule) DeleteUser(ctx context.Context, id int64, tenantID int64) (models.User, error) {
-	response, err := m.persistenceDB.DeleteUser(ctx, db.DeleteUserParams{
+func (m *WebModule) DeleteUser(ctx context.Context, id int64, tenantID int64) error {
+	err := m.persistenceDB.DeleteUser(ctx, db.DeleteUserParams{
 		ID:       id,
 		TenantID: tenantID,
 	})
 	if err != nil {
-		return models.User{}, err
+		return err
 	}
-
-	result := models.ConvertUserModel(response)
-	return result, nil
+	return nil
 }
