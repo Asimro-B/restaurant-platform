@@ -6,7 +6,53 @@ package db
 
 import (
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/shopspring/decimal"
 )
+
+type Menu struct {
+	ID          int64
+	TenantID    int64
+	Name        string
+	Description pgtype.Text
+	IsActive    bool
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
+type MenuCategory struct {
+	ID          int64
+	TenantID    int64
+	MenuID      int64
+	Name        string
+	Description pgtype.Text
+	SortOrder   int32
+	IsActive    bool
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
+type MenuItem struct {
+	ID          int64
+	TenantID    int64
+	CategoryID  int64
+	MenuID      int64
+	Name        string
+	Description pgtype.Text
+	Price       decimal.Decimal
+	IsAvailable bool
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
+type Table struct {
+	ID        int64
+	TenantID  int64
+	Name      string
+	Capacity  int32
+	Status    string
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
+}
 
 type Tenant struct {
 	ID        int64
