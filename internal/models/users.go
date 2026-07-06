@@ -7,6 +7,16 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type contextKey string
+
+const TenantContextKey contextKey = "tenant_user_context"
+
+type TenantUserContext struct {
+	UserID   int64
+	TenantID int64
+	Role     string
+}
+
 type User struct {
 	ID           int    `json:"id"            db:"id"`
 	TenantID     int    `json:"tenant_id"     db:"tenant_id"`
