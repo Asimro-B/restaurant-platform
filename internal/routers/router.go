@@ -64,5 +64,14 @@ func RegisterRoutes(r *gin.RouterGroup, h *handler.WebHandler) {
 		protected.PUT("/tables/:tableID", h.UpdateTable)
 		protected.DELETE("/tables/:tableID", h.DeleteTable)
 		protected.PATCH("/tables/:tableID/status", h.UpdateTableStatus)
+
+		// =========================
+		// Order Management
+		// =========================
+		protected.POST("/tables/:tableID/users/:userID/orders", h.CreateOrder)
+		protected.GET("/tables/:tableID/users/:userID/orders", h.ListOrders)
+		protected.GET("/tables/:tableID/users/:userID/orders/:ID", h.GetOrderByID)
+		protected.PATCH("/tables/:tableID/users/:userID/orders/:ID/status", h.UpdateOrderStatus)
+		protected.DELETE("/tables/:tableID/users/:userID/orders/:ID", h.DeleteOrder)
 	}
 }
