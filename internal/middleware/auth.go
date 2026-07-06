@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"restaurant-platform/internal/models"
@@ -26,10 +27,14 @@ func RequireAuth() gin.HandlerFunc {
 			return
 		}
 
-		// Inject claims into context for handlers to use
-		c.Set("user_id", claims.UserID)
-		c.Set("tenant_id", claims.TenantID)
-		c.Set("role", claims.Role)
+		// Set full context object on request context
+		tenantCtx := models.TenantUserContext{
+			UserID:   claims.UserID,
+			TenantID: claims.TenantID,
+			Role:     claims.Role,
+		}
+		ctx := context.WithValue(c.Request.Context(), models.TenantContextKey, tenantCtx)
+		c.Request = c.Request.WithContext(ctx)
 
 		c.Next()
 	}
