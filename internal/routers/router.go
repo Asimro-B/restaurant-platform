@@ -25,11 +25,44 @@ func RegisterRoutes(r *gin.RouterGroup, h *handler.WebHandler) {
 		protected.PATCH("/tenants/:tenantID/restore", h.RestoreTenant)
 
 		// User management
-		protected.GET("/tenants/:tenantID/users", h.ListUsers)
-		protected.GET("/tenants/:tenantID/users/:userID", h.GetUserByID)
-		protected.PUT("/tenants/:tenantID/users/:userID", h.UpdateUser)
-		protected.DELETE("/tenants/:tenantID/users/:userID", h.DeleteUser)
-		protected.GET("/tenants/:tenantID/user/get-by-email", h.GetUserByEmail)
-		protected.POST("/tenants/:tenantID/user", h.CreateUser)
+		protected.GET("/users", h.ListUsers)
+		protected.GET("/users/:userID", h.GetUserByID)
+		protected.PUT("/users/:userID", h.UpdateUser)
+		protected.DELETE("/users/:userID", h.DeleteUser)
+		protected.GET("/user/get-by-email", h.GetUserByEmail)
+		protected.POST("/user", h.CreateUser)
+
+		// Menu Management
+		protected.POST("/menus", h.CreateMenu)
+		protected.GET("/menus", h.ListMenus)
+		protected.GET("/menus/:ID", h.GetMenuByID)
+		protected.PUT("/menus/:ID", h.UpdateMenu)
+		protected.DELETE("/menus/:ID", h.DeleteMenu)
+
+		// =========================
+		// Menu Categories
+		// =========================
+		protected.POST("/menus/:menuID/categories", h.CreateMenuCategory)
+		protected.GET("/menus/:menuID/categories", h.ListMenuCategories)
+		protected.GET("/menus/:menuID/categories/:ID", h.GetMenuCategoryByID)
+		protected.PUT("/menus/:menuID/categories/:ID", h.UpdateMenuCategory)
+		protected.DELETE("/menus/:menuID/categories/:ID", h.DeleteMenuCategory)
+
+		// =========================
+		// Menu Items
+		// =========================
+		protected.POST("/menus/:menuID/categories/:categoryID/items", h.CreateMenuItem)
+		protected.GET("/menus/:menuID/categories/:categoryID/items", h.ListMenuItems)
+		protected.GET("/menus/:menuID/categories/:categoryID/items/:ID", h.GetMenuItemByID)
+		protected.PUT("/menus/:menuID/categories/:categoryID/items/:ID", h.UpdateMenuItem)
+		protected.DELETE("/menus/:menuID/categories/:categoryID/items/:ID", h.DeleteMenuItem)
+
+		// Table Management
+		protected.POST("/tables", h.CreateTable)
+		protected.GET("/tables", h.ListTables)
+		protected.GET("/tables/:tableID", h.GetTableByID)
+		protected.PUT("/tables/:tableID", h.UpdateTable)
+		protected.DELETE("/tables/:tableID", h.DeleteTable)
+		protected.PATCH("/tables/:tableID/status", h.UpdateTableStatus)
 	}
 }
