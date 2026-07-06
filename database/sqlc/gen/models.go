@@ -44,6 +44,30 @@ type MenuItem struct {
 	UpdatedAt   pgtype.Timestamptz
 }
 
+type Order struct {
+	ID          int64
+	TenantID    int64
+	TableID     int64
+	UserID      int64
+	Status      string
+	Notes       pgtype.Text
+	TotalAmount decimal.Decimal
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
+type OrderItem struct {
+	ID         int64
+	TenantID   int64
+	OrderID    int64
+	MenuItemID int64
+	Quantity   int32
+	UnitPrice  decimal.Decimal
+	TotalPrice decimal.Decimal
+	Notes      pgtype.Text
+	CreatedAt  pgtype.Timestamptz
+}
+
 type Table struct {
 	ID        int64
 	TenantID  int64
