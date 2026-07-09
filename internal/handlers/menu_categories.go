@@ -126,7 +126,7 @@ func (h *WebHandler) GetMenuCategoryByID(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	menuIDStr := c.Param("menuID")
-	idStr := c.Param("ID")
+	idStr := c.Param("categoryID")
 
 	tenantCtx, err := ctxutil.GetTenantFromContext(c)
 	if err != nil {
@@ -165,7 +165,7 @@ func (h *WebHandler) UpdateMenuCategory(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	menuIDStr := c.Param("menuID")
-	idStr := c.Param("ID")
+	idStr := c.Param("categoryID")
 
 	tenantCtx, err := ctxutil.GetTenantFromContext(c)
 	if err != nil {
@@ -220,7 +220,7 @@ func (h *WebHandler) DeleteMenuCategory(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	menuIDStr := c.Param("menuID")
-	idStr := c.Param("ID")
+	idStr := c.Param("categoryID")
 
 	tenantCtx, err := ctxutil.GetTenantFromContext(c)
 	if err != nil {

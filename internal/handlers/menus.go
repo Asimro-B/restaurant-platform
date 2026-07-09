@@ -100,7 +100,7 @@ func (h *WebHandler) ListMenus(c *gin.Context) {
 func (h *WebHandler) GetMenuByID(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	IDStr := c.Param("ID")
+	IDStr := c.Param("menuID")
 
 	tenantCtx, err := ctxutil.GetTenantFromContext(c)
 	if err != nil {
@@ -131,7 +131,7 @@ func (h *WebHandler) GetMenuByID(c *gin.Context) {
 func (h *WebHandler) UpdateMenu(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	IDStr := c.Param("ID")
+	IDStr := c.Param("menuID")
 
 	tenantCtx, err := ctxutil.GetTenantFromContext(c)
 	if err != nil {
@@ -172,7 +172,7 @@ func (h *WebHandler) UpdateMenu(c *gin.Context) {
 func (h *WebHandler) DeleteMenu(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	IDStr := c.Param("ID")
+	IDStr := c.Param("menuID")
 
 	tenantCtx, err := ctxutil.GetTenantFromContext(c)
 	if err != nil {
