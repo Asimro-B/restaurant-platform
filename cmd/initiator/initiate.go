@@ -5,7 +5,10 @@ import (
 	handler "restaurant-platform/internal/handlers"
 	"restaurant-platform/internal/logger"
 	module "restaurant-platform/internal/modules"
+	pusherclient "restaurant-platform/internal/pusher"
 	route "restaurant-platform/internal/routers"
+	"restaurant-platform/internal/worker"
+	orderworkflow "restaurant-platform/internal/workflows/order"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,6 +17,8 @@ func Initiate() {
 	// Initialize logger first
 	logger.Init()
 	logger.Log.Info("Restorant Platform Started")
+
+	pusherclient.Init()
 
 	// database
 	db, err := InitiatePersistenceDB()
@@ -32,8 +37,11 @@ func Initiate() {
 	// service
 	mod := module.NewModule(db)
 
+	activities := orderworkflow.NewOrderActivities(mod)
+	go worker.StartWorker(temporalClient, activities)
+
 	// handler
-	webHandler := handler.NewWebHandler(mod)
+	webHandler := handler.NewWebHandler(mod, temporalClient)
 
 	// route
 	r := gin.Default()
