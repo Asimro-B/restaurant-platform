@@ -42,13 +42,19 @@ func CreateOrderWorkflow(ctx workflow.Context, input models.CreateOrderInput) (*
 		return nil, err
 	}
 
-	// Step 3: Confirm + notify kitchen
+	// Step 3: Confirm order
 	err = workflow.ExecuteActivity(opts, a.ConfirmOrder, order.ID, input.TenantID).Get(opts, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	// Step 4: Wait for kitchen to start preparing
+	// step3b Notify kitchen via pusher
+	err = workflow.ExecuteActivity(opts, a.NotifyKitchen, order.ID, input.TenantID).Get(opts, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Step 4: Wait for kitchen-started signal
 	workflow.GetSignalChannel(ctx, SignalKitchenStarted).Receive(ctx, nil)
 	err = workflow.ExecuteActivity(opts, a.MarkPreparing, order.ID, input.TenantID).Get(opts, nil)
 	if err != nil {
@@ -58,6 +64,12 @@ func CreateOrderWorkflow(ctx workflow.Context, input models.CreateOrderInput) (*
 	// Step 5: Wait for kitchen done
 	workflow.GetSignalChannel(ctx, SignalKitchenDone).Receive(ctx, nil)
 	err = workflow.ExecuteActivity(opts, a.MarkReady, order.ID, input.TenantID).Get(opts, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// step 5b: notify waiter order is ready
+	err = workflow.ExecuteActivity(opts, a.NotifyWaiter, order.ID, input.TenantID).Get(opts, nil)
 	if err != nil {
 		return nil, err
 	}
