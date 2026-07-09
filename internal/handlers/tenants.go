@@ -10,15 +10,18 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"go.temporal.io/sdk/client"
 )
 
 type WebHandler struct {
-	module *module.WebModule
+	module         *module.WebModule
+	temporalClient client.Client
 }
 
-func NewWebHandler(webModule *module.WebModule) *WebHandler {
+func NewWebHandler(webModule *module.WebModule, temporalClient client.Client) *WebHandler {
 	return &WebHandler{
-		module: webModule,
+		module:         webModule,
+		temporalClient: temporalClient,
 	}
 }
 
