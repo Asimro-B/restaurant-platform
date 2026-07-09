@@ -17,6 +17,8 @@ type OrderModule interface {
 	GetMenuItemByID(ctx context.Context, id, tenantID int64) (*models.MenuItem, error)
 	CreateOrderWithItems(ctx context.Context, order models.CreateOrderReq, items []models.CreateOrderItemReq) (*models.Order, error)
 	UpdateOrderStatus(ctx context.Context, orderID, tenantID int64, status models.OrderStatus) error
+	NotifyKitchen(ctx context.Context, orderID, tenantID int64) error
+	NotifyWaiter(ctx context.Context, orderID, tenantID int64) error
 }
 
 func NewOrderActivities(module OrderModule) *OrderActivities {
@@ -83,4 +85,12 @@ func (a *OrderActivities) MarkReady(ctx context.Context, orderID, tenantID int64
 
 func (a *OrderActivities) MarkServed(ctx context.Context, orderID, tenantID int64) error {
 	return a.module.UpdateOrderStatus(ctx, orderID, tenantID, models.OrderStatusServed)
+}
+
+func (a *OrderActivities) NotifyKitchen(ctx context.Context, orderID, tenantID int64) error {
+	return a.module.NotifyKitchen(ctx, orderID, tenantID)
+}
+
+func (a *OrderActivities) NotifyWaiter(ctx context.Context, orderID, tenantID int64) error {
+	return a.module.NotifyWaiter(ctx, orderID, tenantID)
 }
