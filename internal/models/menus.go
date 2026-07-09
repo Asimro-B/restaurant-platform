@@ -184,12 +184,12 @@ type ListMenuItemsReq struct {
 }
 
 type UpdateMenuItemReq struct {
-	ID          int64
-	CategoryID  int64
-	MenuID      int64
-	TenantID    int64
-	Name        string
-	Description string
-	Price       decimal.Decimal
-	IsAvailable bool
+	ID          int64           `json:"id"`
+	CategoryID  int64           `json:"category_id"`
+	MenuID      int64           `json:"menu_id"`
+	TenantID    int64           `json:"tenant_id"`
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	Price       decimal.Decimal `json:"price"`
+	IsAvailable bool            `json:"is_available"`
 }
