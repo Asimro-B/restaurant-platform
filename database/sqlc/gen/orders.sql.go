@@ -33,9 +33,9 @@ func (q *Queries) CountOrders(ctx context.Context, arg CountOrdersParams) (int64
 }
 
 const createOrder = `-- name: CreateOrder :one
-INSERT INTO orders (tenant_id, table_id, user_id, notes, total_amount, status)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, tenant_id, table_id, user_id, status, notes, total_amount, created_at, updated_at
+INSERT INTO orders (tenant_id, table_id, user_id, notes, total_amount, status, reference_id)
+VALUES ($1, $2, $3, $4, $5, 'created', $6)
+RETURNING id, tenant_id, table_id, user_id, status, notes, total_amount, created_at, updated_at, reference_id
 `
 
 type CreateOrderParams struct {
@@ -44,7 +44,7 @@ type CreateOrderParams struct {
 	UserID      int64
 	Notes       pgtype.Text
 	TotalAmount decimal.Decimal
-	Status      string
+	ReferenceID pgtype.Text
 }
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
@@ -54,7 +54,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		arg.UserID,
 		arg.Notes,
 		arg.TotalAmount,
-		arg.Status,
+		arg.ReferenceID,
 	)
 	var i Order
 	err := row.Scan(
@@ -67,6 +67,48 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.TotalAmount,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ReferenceID,
+	)
+	return i, err
+}
+
+const createOrderItem = `-- name: CreateOrderItem :one
+INSERT INTO order_items (tenant_id, order_id, menu_item_id, quantity, unit_price, total_price, notes)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, tenant_id, order_id, menu_item_id, quantity, unit_price, total_price, notes, created_at
+`
+
+type CreateOrderItemParams struct {
+	TenantID   int64
+	OrderID    int64
+	MenuItemID int64
+	Quantity   int32
+	UnitPrice  decimal.Decimal
+	TotalPrice decimal.Decimal
+	Notes      pgtype.Text
+}
+
+func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error) {
+	row := q.db.QueryRow(ctx, createOrderItem,
+		arg.TenantID,
+		arg.OrderID,
+		arg.MenuItemID,
+		arg.Quantity,
+		arg.UnitPrice,
+		arg.TotalPrice,
+		arg.Notes,
+	)
+	var i OrderItem
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.OrderID,
+		&i.MenuItemID,
+		&i.Quantity,
+		&i.UnitPrice,
+		&i.TotalPrice,
+		&i.Notes,
+		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -94,7 +136,7 @@ func (q *Queries) DeleteOrder(ctx context.Context, arg DeleteOrderParams) error 
 }
 
 const getOrderByID = `-- name: GetOrderByID :one
-SELECT id, tenant_id, table_id, user_id, status, notes, total_amount, created_at, updated_at FROM orders
+SELECT id, tenant_id, table_id, user_id, status, notes, total_amount, created_at, updated_at, reference_id FROM orders
 WHERE id = $1 AND tenant_id = $2 AND table_id = $3 AND user_id = $4
 `
 
@@ -123,12 +165,13 @@ func (q *Queries) GetOrderByID(ctx context.Context, arg GetOrderByIDParams) (Ord
 		&i.TotalAmount,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ReferenceID,
 	)
 	return i, err
 }
 
 const listOrders = `-- name: ListOrders :many
-SELECT id, tenant_id, table_id, user_id, status, notes, total_amount, created_at, updated_at FROM orders
+SELECT id, tenant_id, table_id, user_id, status, notes, total_amount, created_at, updated_at, reference_id FROM orders
 WHERE tenant_id = $1
   AND table_id = $2
   AND user_id = $3
@@ -169,6 +212,7 @@ func (q *Queries) ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order
 			&i.TotalAmount,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ReferenceID,
 		); err != nil {
 			return nil, err
 		}
@@ -182,27 +226,19 @@ func (q *Queries) ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order
 
 const updateOrderStatus = `-- name: UpdateOrderStatus :one
 UPDATE orders
-SET name = status = $1, updated_at = now()
-WHERE id = $2 AND tenant_id = $3 AND table_id = $4 AND user_id = $5
-RETURNING id, tenant_id, table_id, user_id, status, notes, total_amount, created_at, updated_at
+SET status = $1, updated_at = now()
+WHERE id = $2 AND tenant_id = $3
+RETURNING id, tenant_id, table_id, user_id, status, notes, total_amount, created_at, updated_at, reference_id
 `
 
 type UpdateOrderStatusParams struct {
 	Status   string
 	ID       int64
 	TenantID int64
-	TableID  int64
-	UserID   int64
 }
 
 func (q *Queries) UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusParams) (Order, error) {
-	row := q.db.QueryRow(ctx, updateOrderStatus,
-		arg.Status,
-		arg.ID,
-		arg.TenantID,
-		arg.TableID,
-		arg.UserID,
-	)
+	row := q.db.QueryRow(ctx, updateOrderStatus, arg.Status, arg.ID, arg.TenantID)
 	var i Order
 	err := row.Scan(
 		&i.ID,
@@ -214,6 +250,7 @@ func (q *Queries) UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusPa
 		&i.TotalAmount,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ReferenceID,
 	)
 	return i, err
 }

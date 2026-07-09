@@ -54,6 +54,7 @@ type Order struct {
 	TotalAmount decimal.Decimal
 	CreatedAt   pgtype.Timestamptz
 	UpdatedAt   pgtype.Timestamptz
+	ReferenceID pgtype.Text
 }
 
 type OrderItem struct {

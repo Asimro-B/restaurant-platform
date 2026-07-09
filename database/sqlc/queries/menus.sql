@@ -120,12 +120,8 @@ ORDER BY created_at DESC
 LIMIT $4 OFFSET $5;
 
 -- name: GetMenuItemByID :one
-SELECT *
-FROM menu_items
-WHERE tenant_id = $1
-  AND menu_id = $2
-  AND category_id = $3
-  AND id = $4;
+SELECT * FROM menu_items
+WHERE id = $1 AND tenant_id = $2;
 
 -- name: UpdateMenuItem :one
 UPDATE menu_items
