@@ -19,6 +19,10 @@ func Initiate() {
 	logger.Log.Info("Restorant Platform Started")
 
 	pusherclient.Init()
+	logger.Log.Info("Pusher initialized",
+		"app_id", os.Getenv("PUSHER_APP_ID"),
+		"cluster", os.Getenv("PUSHER_CLUSTER"),
+	)
 
 	// database
 	db, err := InitiatePersistenceDB()
