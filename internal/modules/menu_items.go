@@ -51,20 +51,18 @@ func (m *WebModule) ListMenuItems(ctx context.Context, arg models.ListMenuItemsR
 	return result, total, nil
 }
 
-func (m *WebModule) GetMenuItemByID(ctx context.Context, tenantID, menuID, categoryID, id int64) (models.MenuItem, error) {
+func (m *WebModule) GetMenuItemByID(ctx context.Context, id, tenantID int64) (*models.MenuItem, error) {
 	response, err := m.persistenceDB.GetMenuItemByID(ctx, db.GetMenuItemByIDParams{
-		TenantID:   tenantID,
-		MenuID:     menuID,
-		CategoryID: categoryID,
-		ID:         id,
+		ID:       id,
+		TenantID: tenantID,
 	})
 	if err != nil {
-		return models.MenuItem{}, err
+		return &models.MenuItem{}, err
 	}
 
 	result := models.ConvertMenuItemModel(response)
 
-	return result, nil
+	return &result, nil
 }
 
 func (m *WebModule) UpdateMenuItem(ctx context.Context, arg models.UpdateMenuItemReq) (models.MenuItem, error) {

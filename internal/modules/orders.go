@@ -6,22 +6,43 @@ import (
 	"restaurant-platform/internal/models"
 )
 
-func (m *WebModule) CreateOrder(ctx context.Context, arg models.CreateOrderReq) (models.Order, error) {
-	response, err := m.persistenceDB.CreateOrder(ctx, db.CreateOrderParams{
-		TenantID:    arg.TenantID,
-		TableID:     arg.TableID,
-		UserID:      arg.UserID,
-		Notes:       models.ToPGText(arg.Notes),
-		TotalAmount: arg.TotalAmount,
-		Status:      arg.Status,
+func (m *WebModule) CreateOrderWithItems(
+	ctx context.Context,
+	params models.CreateOrderReq,
+	items []models.CreateOrderItemReq,
+) (*models.Order, error) {
+
+	// 1. Insert the order row
+	order, err := m.persistenceDB.CreateOrder(ctx, db.CreateOrderParams{
+		TenantID:    params.TenantID,
+		TableID:     params.TableID,
+		UserID:      params.UserID,
+		Notes:       models.ToPGText(params.Notes),
+		TotalAmount: params.TotalAmount,
+		ReferenceID: models.ToPGText(params.ReferenceID),
 	})
 	if err != nil {
-		return models.Order{}, err
+		return nil, err
 	}
 
-	result := models.ConvertOrderModel(response)
+	// 2. Insert each order item using the new order's ID
+	for _, item := range items {
+		_, err := m.persistenceDB.CreateOrderItem(ctx, db.CreateOrderItemParams{
+			TenantID:   params.TenantID,
+			OrderID:    order.ID,
+			MenuItemID: item.MenuItemID,
+			Quantity:   int32(item.Quantity),
+			UnitPrice:  item.UnitPrice,
+			TotalPrice: item.TotalPrice,
+			Notes:      models.ToPGText(item.Notes),
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
 
-	return result, nil
+	result := models.ConvertOrderModel(order)
+	return &result, nil
 }
 
 func (m *WebModule) ListOrders(ctx context.Context, arg models.ListOrdersReq) ([]models.Order, int64, error) {
@@ -66,20 +87,17 @@ func (m *WebModule) GetOrderByID(ctx context.Context, id, tenantID, tableID, use
 	return result, nil
 }
 
-func (m *WebModule) UpdateOrderStatus(ctx context.Context, arg models.UpdateOrderStatusReq) (models.Order, error) {
-	response, err := m.persistenceDB.UpdateOrderStatus(ctx, db.UpdateOrderStatusParams{
-		Status:   arg.Status,
-		ID:       arg.ID,
-		TenantID: arg.TenantID,
-		TableID:  arg.TableID,
-		UserID:   arg.UserID,
+func (m *WebModule) UpdateOrderStatus(ctx context.Context, orderID, tenantID int64, status models.OrderStatus) error {
+	_, err := m.persistenceDB.UpdateOrderStatus(ctx, db.UpdateOrderStatusParams{
+		Status:   string(status),
+		ID:       orderID,
+		TenantID: tenantID,
 	})
 	if err != nil {
-		return models.Order{}, err
+		return err
 	}
 
-	result := models.ConvertOrderModel(response)
-	return result, nil
+	return nil
 }
 
 func (m *WebModule) DeleteOrder(ctx context.Context, id, tenantID, tableID, userID int64) error {
