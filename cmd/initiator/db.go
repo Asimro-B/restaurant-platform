@@ -8,6 +8,7 @@ import (
 	"restaurant-platform/internal/logger"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.temporal.io/sdk/client"
 )
 
 func InitiatePersistenceDB() (*persistencedb.PersistenceDB, error) {
@@ -31,4 +32,14 @@ func InitiatePersistenceDB() (*persistencedb.PersistenceDB, error) {
 	}
 	logger.Log.Info("Connected to PostgreSQL")
 	return persistencedb.New(pool), nil
+}
+
+func InitiateTemporalClient() (client.Client, error) {
+	client, err := client.Dial(client.Options{
+		HostPort: os.Getenv("TEMPORAL_HOST"),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Create temporal client: %w", err)
+	}
+	return client, nil
 }

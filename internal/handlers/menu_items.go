@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"restaurant-platform/internal/ctxutil"
 	"restaurant-platform/internal/logger"
@@ -40,6 +41,15 @@ func (h *WebHandler) CreateMenuItem(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Error("Failed to bind request body", err)
 		models.ERROR(c, http.StatusBadRequest, err)
+		return
+	}
+
+	if req.Name == "" {
+		models.ERROR(c, http.StatusBadRequest, fmt.Errorf("name is required"))
+		return
+	}
+	if !req.Price.IsPositive() {
+		models.ERROR(c, http.StatusBadRequest, fmt.Errorf("price must be greater than 0"))
 		return
 	}
 
@@ -141,27 +151,12 @@ func (h *WebHandler) ListMenuItems(c *gin.Context) {
 func (h *WebHandler) GetMenuItemByID(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	categoryIDStr := c.Param("categoryID")
 	idStr := c.Param("ID")
-	menuIDStr := c.Param("menuID")
-	menuID, err := strconv.ParseInt(menuIDStr, 10, 64)
-	if err != nil {
-		logger.Error("Invalid menu id", err)
-		models.ERROR(c, http.StatusBadRequest, err)
-		return
-	}
 
 	tenantCtx, err := ctxutil.GetTenantFromContext(c)
 	if err != nil {
 		logger.Error("Failed to get the user from the context: ", err)
 		models.ERROR(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	categoryID, err := strconv.ParseInt(categoryIDStr, 10, 64)
-	if err != nil {
-		logger.Error("Invalid category id", err)
-		models.ERROR(c, http.StatusBadRequest, err)
 		return
 	}
 
@@ -172,7 +167,7 @@ func (h *WebHandler) GetMenuItemByID(c *gin.Context) {
 		return
 	}
 
-	item, err := h.module.GetMenuItemByID(ctx, tenantCtx.TenantID, menuID, categoryID, id)
+	item, err := h.module.GetMenuItemByID(ctx, id, tenantCtx.TenantID)
 	if err != nil {
 		logger.Error("Failed to get menu item", err)
 		models.ERROR(c, http.StatusInternalServerError, err)

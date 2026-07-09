@@ -320,28 +320,17 @@ func (q *Queries) GetMenuCategoryByID(ctx context.Context, arg GetMenuCategoryBy
 }
 
 const getMenuItemByID = `-- name: GetMenuItemByID :one
-SELECT id, tenant_id, category_id, menu_id, name, description, price, is_available, created_at, updated_at
-FROM menu_items
-WHERE tenant_id = $1
-  AND menu_id = $2
-  AND category_id = $3
-  AND id = $4
+SELECT id, tenant_id, category_id, menu_id, name, description, price, is_available, created_at, updated_at FROM menu_items
+WHERE id = $1 AND tenant_id = $2
 `
 
 type GetMenuItemByIDParams struct {
-	TenantID   int64
-	MenuID     int64
-	CategoryID int64
-	ID         int64
+	ID       int64
+	TenantID int64
 }
 
 func (q *Queries) GetMenuItemByID(ctx context.Context, arg GetMenuItemByIDParams) (MenuItem, error) {
-	row := q.db.QueryRow(ctx, getMenuItemByID,
-		arg.TenantID,
-		arg.MenuID,
-		arg.CategoryID,
-		arg.ID,
-	)
+	row := q.db.QueryRow(ctx, getMenuItemByID, arg.ID, arg.TenantID)
 	var i MenuItem
 	err := row.Scan(
 		&i.ID,

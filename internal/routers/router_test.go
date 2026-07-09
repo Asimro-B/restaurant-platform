@@ -13,5 +13,5 @@ func TestRegisterRoutes(t *testing.T) {
 	r := gin.New()
 	api := r.Group("/api/v1")
 
-	RegisterRoutes(api, handler.NewWebHandler(nil))
+	RegisterRoutes(api, handler.NewWebHandler(nil, nil))
 }

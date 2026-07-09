@@ -35,18 +35,18 @@ func RegisterRoutes(r *gin.RouterGroup, h *handler.WebHandler) {
 		// Menu Management
 		protected.POST("/menus", h.CreateMenu)
 		protected.GET("/menus", h.ListMenus)
-		protected.GET("/menus/:ID", h.GetMenuByID)
-		protected.PUT("/menus/:ID", h.UpdateMenu)
-		protected.DELETE("/menus/:ID", h.DeleteMenu)
+		protected.GET("/menus/:menuID", h.GetMenuByID)
+		protected.PUT("/menus/:menuID", h.UpdateMenu)
+		protected.DELETE("/menus/:menuID", h.DeleteMenu)
 
 		// =========================
 		// Menu Categories
 		// =========================
 		protected.POST("/menus/:menuID/categories", h.CreateMenuCategory)
 		protected.GET("/menus/:menuID/categories", h.ListMenuCategories)
-		protected.GET("/menus/:menuID/categories/:ID", h.GetMenuCategoryByID)
-		protected.PUT("/menus/:menuID/categories/:ID", h.UpdateMenuCategory)
-		protected.DELETE("/menus/:menuID/categories/:ID", h.DeleteMenuCategory)
+		protected.GET("/menus/:menuID/categories/:categoryID", h.GetMenuCategoryByID)
+		protected.PUT("/menus/:menuID/categories/:categoryID", h.UpdateMenuCategory)
+		protected.DELETE("/menus/:menuID/categories/:categoryID", h.DeleteMenuCategory)
 
 		// =========================
 		// Menu Items
@@ -64,5 +64,18 @@ func RegisterRoutes(r *gin.RouterGroup, h *handler.WebHandler) {
 		protected.PUT("/tables/:tableID", h.UpdateTable)
 		protected.DELETE("/tables/:tableID", h.DeleteTable)
 		protected.PATCH("/tables/:tableID/status", h.UpdateTableStatus)
+
+		// =========================
+		// Order Management
+		// =========================
+		protected.POST("/tables/:tableID/orders", h.CreateOrder)
+		protected.GET("/tables/:tableID/orders", h.ListOrders)
+		protected.GET("/tables/:tableID/orders/:ID", h.GetOrderByID)
+		protected.PATCH("/tables/:tableID/orders/:ID/status", h.UpdateOrderStatus)
+		protected.DELETE("/tables/:tableID/users/:userID/orders/:ID", h.DeleteOrder)
+
+		protected.PATCH("/orders/:referenceID/kitchen-start", h.KitchenStart)
+		protected.PATCH("/orders/:referenceID/kitchen-done", h.KitchenDone)
+		protected.PATCH("/orders/:referenceID/served", h.OrderServed)
 	}
 }

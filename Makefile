@@ -37,3 +37,13 @@ migrate-down:
 
 migrate-status:
 	migrate -path database/schema -database "$(DB_URL)" version
+
+	# Start all infrastructure (DB + Temporal)
+infra-up:
+	docker start restaurant_platform_db
+	docker compose -f docker-compose.temporal.yml up -d
+
+# Stop all infrastructure
+infra-down:
+	docker stop restaurant_platform_db
+	docker compose -f docker-compose.temporal.yml down
