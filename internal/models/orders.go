@@ -127,3 +127,11 @@ type ValidateItemsResult struct {
 	Items []CreateOrderItemReq `json:"items"`
 	Total string               `json:"total"`
 }
+
+func (s OrderStatus) ValidateStatus() bool {
+	switch s {
+	case OrderStatusServed:
+		return true
+	}
+	return false
+}

@@ -170,6 +170,34 @@ func (q *Queries) GetOrderByID(ctx context.Context, arg GetOrderByIDParams) (Ord
 	return i, err
 }
 
+const getOrderByReferenceID = `-- name: GetOrderByReferenceID :one
+SELECT id, tenant_id, table_id, user_id, status, notes, total_amount, created_at, updated_at, reference_id FROM orders
+WHERE reference_id = $1 AND tenant_id = $2
+`
+
+type GetOrderByReferenceIDParams struct {
+	ReferenceID pgtype.Text
+	TenantID    int64
+}
+
+func (q *Queries) GetOrderByReferenceID(ctx context.Context, arg GetOrderByReferenceIDParams) (Order, error) {
+	row := q.db.QueryRow(ctx, getOrderByReferenceID, arg.ReferenceID, arg.TenantID)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.TableID,
+		&i.UserID,
+		&i.Status,
+		&i.Notes,
+		&i.TotalAmount,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ReferenceID,
+	)
+	return i, err
+}
+
 const listOrders = `-- name: ListOrders :many
 SELECT id, tenant_id, table_id, user_id, status, notes, total_amount, created_at, updated_at, reference_id FROM orders
 WHERE tenant_id = $1
