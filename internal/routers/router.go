@@ -77,5 +77,8 @@ func RegisterRoutes(r *gin.RouterGroup, h *handler.WebHandler) {
 		protected.PATCH("/orders/:referenceID/kitchen-start", h.KitchenStart)
 		protected.PATCH("/orders/:referenceID/kitchen-done", h.KitchenDone)
 		protected.PATCH("/orders/:referenceID/served", h.OrderServed)
+
+		protected.POST("/orders/:referenceID/pay", h.ProcessPayment)
+		protected.GET("/orders/:referenceID/bill", h.GetBill)
 	}
 }

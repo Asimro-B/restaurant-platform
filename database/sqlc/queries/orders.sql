@@ -35,3 +35,7 @@ WHERE id = $1 AND tenant_id = $2 AND table_id = $3 AND user_id = $4;
 INSERT INTO order_items (tenant_id, order_id, menu_item_id, quantity, unit_price, total_price, notes)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING *;
+
+-- name: GetOrderByReferenceID :one
+SELECT * FROM orders
+WHERE reference_id = $1 AND tenant_id = $2;

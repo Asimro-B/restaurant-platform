@@ -113,3 +113,17 @@ func (m *WebModule) DeleteOrder(ctx context.Context, id, tenantID, tableID, user
 
 	return nil
 }
+
+func (m *WebModule) GetOrderByReferenceID(ctx context.Context, referenceID string, tenantID int64) (models.Order, error) {
+	response, err := m.persistenceDB.GetOrderByReferenceID(ctx, db.GetOrderByReferenceIDParams{
+		ReferenceID: models.ToPGText(referenceID),
+		TenantID:    tenantID,
+	})
+	if err != nil {
+		return models.Order{}, err
+	}
+
+	result := models.ConvertOrderModel(response)
+
+	return result, err
+}
