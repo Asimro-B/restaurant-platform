@@ -69,6 +69,19 @@ type OrderItem struct {
 	CreatedAt  pgtype.Timestamptz
 }
 
+type Payment struct {
+	ID            int64
+	TenantID      int64
+	OrderID       int64
+	Amount        decimal.Decimal
+	PaymentMethod string
+	Status        string
+	Reference     pgtype.Text
+	Notes         pgtype.Text
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+}
+
 type Table struct {
 	ID        int64
 	TenantID  int64
