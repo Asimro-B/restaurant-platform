@@ -1,4 +1,4 @@
 -- +migrate Down
 
 -- Write your rollback here
-ALTER TABLE orders DROP COLUMN reference_id;
+ALTER TABLE orders DROP COLUMN IF EXISTS reference_id;
