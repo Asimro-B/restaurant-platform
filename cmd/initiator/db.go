@@ -9,6 +9,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.temporal.io/sdk/client"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 func InitiatePersistenceDB() (*persistencedb.PersistenceDB, error) {
@@ -31,7 +33,12 @@ func InitiatePersistenceDB() (*persistencedb.PersistenceDB, error) {
 		return nil, fmt.Errorf("ping database: %w", err)
 	}
 	logger.Log.Info("Connected to PostgreSQL")
-	return persistencedb.New(pool), nil
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		return nil, fmt.Errorf("Open gorm db: %w", err)
+	}
+	return persistencedb.New(pool, db), nil
 }
 
 func InitiateTemporalClient() (client.Client, error) {
