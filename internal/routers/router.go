@@ -80,5 +80,13 @@ func RegisterRoutes(r *gin.RouterGroup, h *handler.WebHandler) {
 
 		protected.POST("/orders/:referenceID/pay", h.ProcessPayment)
 		protected.GET("/orders/:referenceID/bill", h.GetBill)
+
+		// Reservations
+		protected.POST("/reservations", h.CreateReservation)
+		protected.GET("/reservations", h.ListReservations)
+		protected.GET("/reservations/:reservationID", h.GetReservationByID)
+		protected.PATCH("/reservations/:reservationID/confirm", h.ConfirmReservation)
+		protected.PATCH("/reservations/:reservationID/cancel", h.CancelReservation)
+		protected.PATCH("/reservations/:reservationID/complete", h.CompleteReservation)
 	}
 }
