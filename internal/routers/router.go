@@ -3,6 +3,7 @@ package route
 import (
 	handler "restaurant-platform/internal/handlers"
 	"restaurant-platform/internal/middleware"
+	"restaurant-platform/internal/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,77 +17,91 @@ func RegisterRoutes(r *gin.RouterGroup, h *handler.WebHandler) {
 	protected := r.Group("/")
 	protected.Use(middleware.RequireAuth())
 	{
-		// Tenant management
-		protected.GET("/tenant/slug/:slug", h.GetTenantBySlug)
-		protected.GET("/tenants", h.ListTenants)
-		protected.GET("/tenants/:tenantID", h.GetTenantByID)
-		protected.PUT("/tenants/:tenantID", h.UpdateTenant)
-		protected.DELETE("/tenants/:tenantID", h.DeleteTenant)
-		protected.PATCH("/tenants/:tenantID/restore", h.RestoreTenant)
+		// owner and manager only
+		admin := protected.Group("/")
+		admin.Use(middleware.RequireRole(models.RoleManager))
+		{
+			// Tenant management
+			admin.GET("/tenants", h.ListTenants)
+			admin.GET("/tenants/:tenantID", h.GetTenantByID)
+			admin.PATCH("/tenants/:tenantID/restore", h.RestoreTenant)
+			admin.GET("/tenant/slug/:slug", h.GetTenantBySlug)
 
-		// User management
-		protected.GET("/users", h.ListUsers)
-		protected.GET("/users/:userID", h.GetUserByID)
-		protected.PUT("/users/:userID", h.UpdateUser)
-		protected.DELETE("/users/:userID", h.DeleteUser)
-		protected.GET("/user/get-by-email", h.GetUserByEmail)
-		protected.POST("/user", h.CreateUser)
+			// User management
+			admin.GET("/users", h.ListUsers)
+			admin.GET("/users/:userID", h.GetUserByID)
+			admin.PUT("/users/:userID", h.UpdateUser)
+			admin.GET("/user/get-by-email", h.GetUserByEmail)
 
-		// Menu Management
-		protected.POST("/menus", h.CreateMenu)
-		protected.GET("/menus", h.ListMenus)
-		protected.GET("/menus/:menuID", h.GetMenuByID)
-		protected.PUT("/menus/:menuID", h.UpdateMenu)
-		protected.DELETE("/menus/:menuID", h.DeleteMenu)
+			// Menu management
+			admin.POST("/menus", h.CreateMenu)
+			admin.PUT("/menus/:menuID", h.UpdateMenu)
+			admin.DELETE("/menus/:menuID", h.DeleteMenu)
+			admin.POST("/menus/:menuID/categories", h.CreateMenuCategory)
+			admin.PUT("/menus/:menuID/categories/:categoryID", h.UpdateMenuCategory)
+			admin.DELETE("/menus/:menuID/categories/:categoryID", h.DeleteMenuCategory)
+			admin.POST("/menus/:menuID/categories/:categoryID/items", h.CreateMenuItem)
+			admin.PUT("/menus/:menuID/categories/:categoryID/items/:ID", h.UpdateMenuItem)
+			admin.DELETE("/menus/:menuID/categories/:categoryID/items/:ID", h.DeleteMenuItem)
 
-		// =========================
-		// Menu Categories
-		// =========================
-		protected.POST("/menus/:menuID/categories", h.CreateMenuCategory)
-		protected.GET("/menus/:menuID/categories", h.ListMenuCategories)
-		protected.GET("/menus/:menuID/categories/:categoryID", h.GetMenuCategoryByID)
-		protected.PUT("/menus/:menuID/categories/:categoryID", h.UpdateMenuCategory)
-		protected.DELETE("/menus/:menuID/categories/:categoryID", h.DeleteMenuCategory)
+			// Reservations management
+			admin.GET("/reservations", h.ListReservations)
+			admin.PATCH("/reservations/:reservationID/confirm", h.ConfirmReservation)
+			admin.PATCH("/reservations/:reservationID/cancel", h.CancelReservation)
+			admin.PATCH("/reservations/:reservationID/complete", h.CompleteReservation)
+		}
 
-		// =========================
-		// Menu Items
-		// =========================
-		protected.POST("/menus/:menuID/categories/:categoryID/items", h.CreateMenuItem)
-		protected.GET("/menus/:menuID/categories/:categoryID/items", h.ListMenuItems)
-		protected.GET("/menus/:menuID/categories/:categoryID/items/:ID", h.GetMenuItemByID)
-		protected.PUT("/menus/:menuID/categories/:categoryID/items/:ID", h.UpdateMenuItem)
-		protected.DELETE("/menus/:menuID/categories/:categoryID/items/:ID", h.DeleteMenuItem)
+		// waiter and above
+		waiter := protected.Group("/")
+		waiter.Use(middleware.RequireRole(models.RoleWaiter))
+		{
+			// Read menus (everyone needs to see the menu)
+			waiter.GET("/menus", h.ListMenus)
+			waiter.GET("/menus/:menuID", h.GetMenuByID)
+			waiter.GET("/menus/:menuID/categories", h.ListMenuCategories)
+			waiter.GET("/menus/:menuID/categories/:categoryID", h.GetMenuCategoryByID)
+			waiter.GET("/menus/:menuID/categories/:categoryID/items", h.ListMenuItems)
+			waiter.GET("/menus/:menuID/categories/:categoryID/items/:ID", h.GetMenuItemByID)
 
-		// Table Management
-		protected.POST("/tables", h.CreateTable)
-		protected.GET("/tables", h.ListTables)
-		protected.GET("/tables/:tableID", h.GetTableByID)
-		protected.PUT("/tables/:tableID", h.UpdateTable)
-		protected.DELETE("/tables/:tableID", h.DeleteTable)
-		protected.PATCH("/tables/:tableID/status", h.UpdateTableStatus)
+			// Tables
+			waiter.GET("/tables", h.ListTables)
+			waiter.GET("/tables/:tableID", h.GetTableByID)
+			waiter.PATCH("/tables/:tableID/status", h.UpdateTableStatus)
 
-		// =========================
-		// Order Management
-		// =========================
-		protected.POST("/tables/:tableID/orders", h.CreateOrder)
-		protected.GET("/tables/:tableID/orders", h.ListOrders)
-		protected.GET("/tables/:tableID/orders/:ID", h.GetOrderByID)
-		protected.PATCH("/tables/:tableID/orders/:ID/status", h.UpdateOrderStatus)
-		protected.DELETE("/tables/:tableID/users/:userID/orders/:ID", h.DeleteOrder)
+			// Orders
+			waiter.POST("/tables/:tableID/orders", h.CreateOrder)
+			waiter.GET("/orders/:referenceID/bill", h.GetBill)
+			waiter.PATCH("/orders/:referenceID/served", h.OrderServed)
 
-		protected.PATCH("/orders/:referenceID/kitchen-start", h.KitchenStart)
-		protected.PATCH("/orders/:referenceID/kitchen-done", h.KitchenDone)
-		protected.PATCH("/orders/:referenceID/served", h.OrderServed)
+			// Reservations
+			waiter.POST("/reservations", h.CreateReservation)
+			waiter.GET("/reservations/:reservationID", h.GetReservationByID)
+		}
 
-		protected.POST("/orders/:referenceID/pay", h.ProcessPayment)
-		protected.GET("/orders/:referenceID/bill", h.GetBill)
+		// kitchen only
+		kitchen := protected.Group("/")
+		kitchen.Use(middleware.RequireRole(models.RoleKitchen))
+		{
+			kitchen.PATCH("/orders/:referenceID/kitchen-start", h.KitchenStart)
+			kitchen.PATCH("/orders/:referenceID/kitchen-done", h.KitchenDone)
+		}
 
-		// Reservations
-		protected.POST("/reservations", h.CreateReservation)
-		protected.GET("/reservations", h.ListReservations)
-		protected.GET("/reservations/:reservationID", h.GetReservationByID)
-		protected.PATCH("/reservations/:reservationID/confirm", h.ConfirmReservation)
-		protected.PATCH("/reservations/:reservationID/cancel", h.CancelReservation)
-		protected.PATCH("/reservations/:reservationID/complete", h.CompleteReservation)
+		// casher and above
+		cashier := protected.Group("/")
+		cashier.Use(middleware.RequireRole(models.RoleCasher))
+		{
+			cashier.POST("/orders/:referenceID/pay", h.ProcessPayment)
+		}
+
+		// owener only
+		owner := protected.Group("/")
+		owner.Use(middleware.RequireRole(models.RoleOwner))
+		{
+			owner.PUT("/tenants/:tenantID", h.UpdateTenant)
+			owner.DELETE("/tenants/:tenantID", h.DeleteTenant)
+			owner.POST("/users", h.CreateUser)
+			owner.DELETE("/users/:userID", h.DeleteUser)
+		}
+
 	}
 }
