@@ -105,3 +105,13 @@ type UpdateUserReq struct {
 	MobilePhone  string `json:"mobile_phone"`
 	Phone        string `json:"phone"`
 }
+
+type UserRole string
+
+const (
+	RoleOwner   UserRole = "owner"
+	RoleManager UserRole = "manager"
+	RoleWaiter  UserRole = "waiter"
+	RoleKitchen UserRole = "kitchen"
+	RoleCasher  UserRole = "casher"
+)
