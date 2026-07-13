@@ -16,8 +16,9 @@ import (
 func (h *WebHandler) CreateUser(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	tenantID, err := parseTenantID(c)
+	tenantCtx, err := ctxutil.GetTenantFromContext(c)
 	if err != nil {
+		logger.Error("failed to get tenant from context", err)
 		models.ERROR(c, http.StatusBadRequest, err)
 		return
 	}
@@ -28,13 +29,13 @@ func (h *WebHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	req.TenantID = tenantID
 	hashedPassword, err := utils.HashPassword(req.PasswordHash)
 	if err != nil {
 		models.ERROR(c, http.StatusInternalServerError, err)
 		return
 	}
 
+	req.TenantID = tenantCtx.TenantID
 	req.PasswordHash = hashedPassword
 
 	user, err := h.module.CreateUser(ctx, req)
@@ -76,7 +77,7 @@ func (h *WebHandler) ListUsers(c *gin.Context) {
 	users, err := h.module.ListUsers(ctx, models.ListUsersReq{
 		TenantID:    tenantCtx.TenantID,
 		Search:      c.Query("search"),
-		Role:        c.Query("role"),
+		Role:        tenantCtx.Role,
 		SortBy:      queryDefault(c, "sort_by", "created_at"),
 		SortOrder:   queryDefault(c, "sort_order", "desc"),
 		LimitCount:  int32(limit),

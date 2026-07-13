@@ -82,6 +82,20 @@ type Payment struct {
 	UpdatedAt     pgtype.Timestamptz
 }
 
+type Reservation struct {
+	ID            int64
+	TenantID      int64
+	TableID       int64
+	CustomerName  string
+	CustomerPhone string
+	PartySize     int32
+	ReservedAt    pgtype.Timestamptz
+	Status        string
+	Notes         pgtype.Text
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+}
+
 type Table struct {
 	ID        int64
 	TenantID  int64
