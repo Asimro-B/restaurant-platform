@@ -113,5 +113,5 @@ const (
 	RoleManager UserRole = "manager"
 	RoleWaiter  UserRole = "waiter"
 	RoleKitchen UserRole = "kitchen"
-	RoleCasher  UserRole = "casher"
+	RoleCashier UserRole = "casher"
 )
