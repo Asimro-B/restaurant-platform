@@ -41,9 +41,11 @@ migrate-status:
 	# Start all infrastructure (DB + Temporal)
 infra-up:
 	docker start restaurant_platform_db
+	docker start restaurant_platform_redis
 	docker compose -f docker-compose.temporal.yml up -d
 
 # Stop all infrastructure
 infra-down:
 	docker stop restaurant_platform_db
+	docker stop restaurant_platform_redis
 	docker compose -f docker-compose.temporal.yml down
