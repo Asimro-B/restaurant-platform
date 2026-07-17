@@ -92,14 +92,6 @@ func (h *WebHandler) ListOrders(c *gin.Context) {
 		return
 	}
 
-	tableIDStr := c.Param("tableID")
-	tableID, err := strconv.ParseInt(tableIDStr, 10, 64)
-	if err != nil {
-		logger.Error("Invalid table id", err)
-		models.ERROR(c, http.StatusBadRequest, err)
-		return
-	}
-
 	page, err := parsePositiveQueryInt(c, "page", 1)
 	if err != nil {
 		models.ERROR(c, http.StatusBadRequest, err)
@@ -113,11 +105,22 @@ func (h *WebHandler) ListOrders(c *gin.Context) {
 	}
 
 	offset := (page - 1) * limit
+	statusFilter := c.Query("status")
+	tableIDFileter := c.Query("table_id")
+
+	var tableID int64
+	if tableIDFileter != "" {
+		tableID, err = strconv.ParseInt(tableIDFileter, 10, 64)
+		if err != nil {
+			models.ERROR(c, http.StatusBadRequest, fmt.Errorf("invalid table id"))
+			return
+		}
+	}
 
 	orders, total, err := h.module.ListOrders(ctx, models.ListOrdersReq{
 		TenantID: tenantCtx.TenantID,
 		TableID:  tableID,
-		UserID:   tenantCtx.UserID,
+		Status:   statusFilter,
 		Page:     page,
 		Limit:    limit,
 		Offset:   offset,
