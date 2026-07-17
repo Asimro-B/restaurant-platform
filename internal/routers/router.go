@@ -32,11 +32,13 @@ func RegisterRoutes(r *gin.RouterGroup, h *handler.WebHandler) {
 		protected.PUT("/users/:userID", middleware.RequireRole(models.RoleOwner, models.RoleManager), h.UpdateUser)
 		protected.POST("/users", middleware.RequireRole(models.RoleOwner), h.CreateUser)
 		protected.DELETE("/users/:userID", middleware.RequireRole(models.RoleOwner), h.DeleteUser)
+		protected.PATCH("/users/:userID/restore", middleware.RequireRole(models.RoleOwner), h.RestoreUser)
 
 		// Menu management — write: owner/manager, read: all roles
 		protected.POST("/menus", middleware.RequireRole(models.RoleOwner, models.RoleManager), h.CreateMenu)
 		protected.PUT("/menus/:menuID", middleware.RequireRole(models.RoleOwner, models.RoleManager), h.UpdateMenu)
 		protected.DELETE("/menus/:menuID", middleware.RequireRole(models.RoleOwner, models.RoleManager), h.DeleteMenu)
+		protected.PATCH("/menus/:menuID/restore", middleware.RequireRole(models.RoleOwner, models.RoleManager), h.RestoreMenu)
 		protected.GET("/menus", middleware.RequireRole(models.RoleOwner, models.RoleManager, models.RoleWaiter, models.RoleKitchen, models.RoleCashier), h.ListMenus)
 		protected.GET("/menus/:menuID", middleware.RequireRole(models.RoleOwner, models.RoleManager, models.RoleWaiter, models.RoleKitchen, models.RoleCashier), h.GetMenuByID)
 
@@ -44,6 +46,7 @@ func RegisterRoutes(r *gin.RouterGroup, h *handler.WebHandler) {
 		protected.POST("/menus/:menuID/categories", middleware.RequireRole(models.RoleOwner, models.RoleManager), h.CreateMenuCategory)
 		protected.PUT("/menus/:menuID/categories/:categoryID", middleware.RequireRole(models.RoleOwner, models.RoleManager), h.UpdateMenuCategory)
 		protected.DELETE("/menus/:menuID/categories/:categoryID", middleware.RequireRole(models.RoleOwner, models.RoleManager), h.DeleteMenuCategory)
+		protected.PATCH("/menus/:menuID/categories/:categoryID/restore", middleware.RequireRole(models.RoleOwner, models.RoleManager), h.RestoreMenuCategory)
 		protected.GET("/menus/:menuID/categories", middleware.RequireRole(models.RoleOwner, models.RoleManager, models.RoleWaiter, models.RoleKitchen, models.RoleCashier), h.ListMenuCategories)
 		protected.GET("/menus/:menuID/categories/:categoryID", middleware.RequireRole(models.RoleOwner, models.RoleManager, models.RoleWaiter, models.RoleKitchen, models.RoleCashier), h.GetMenuCategoryByID)
 
@@ -51,6 +54,7 @@ func RegisterRoutes(r *gin.RouterGroup, h *handler.WebHandler) {
 		protected.POST("/menus/:menuID/categories/:categoryID/items", middleware.RequireRole(models.RoleOwner, models.RoleManager), h.CreateMenuItem)
 		protected.PUT("/menus/:menuID/categories/:categoryID/items/:ID", middleware.RequireRole(models.RoleOwner, models.RoleManager), h.UpdateMenuItem)
 		protected.DELETE("/menus/:menuID/categories/:categoryID/items/:ID", middleware.RequireRole(models.RoleOwner, models.RoleManager), h.DeleteMenuItem)
+		protected.PATCH("/menus/:menuID/categories/:categoryID/items/:ID/restore", middleware.RequireRole(models.RoleOwner, models.RoleManager), h.RestoreMenuItem)
 		protected.GET("/menus/:menuID/categories/:categoryID/items", middleware.RequireRole(models.RoleOwner, models.RoleManager, models.RoleWaiter, models.RoleKitchen, models.RoleCashier), h.ListMenuItems)
 		protected.GET("/menus/:menuID/categories/:categoryID/items/:ID", middleware.RequireRole(models.RoleOwner, models.RoleManager, models.RoleWaiter, models.RoleKitchen, models.RoleCashier), h.GetMenuItemByID)
 
@@ -63,6 +67,7 @@ func RegisterRoutes(r *gin.RouterGroup, h *handler.WebHandler) {
 		protected.PATCH("/tables/:tableID/status", middleware.RequireRole(models.RoleOwner, models.RoleManager, models.RoleWaiter), h.UpdateTableStatus)
 
 		// Orders
+		protected.GET("/orders", middleware.RequireRole(models.RoleOwner, models.RoleManager, models.RoleWaiter, models.RoleCashier), h.ListOrders)
 		protected.POST("/tables/:tableID/orders", middleware.RequireRole(models.RoleOwner, models.RoleManager, models.RoleWaiter), h.CreateOrder)
 		protected.GET("/orders/:referenceID/bill", middleware.RequireRole(models.RoleOwner, models.RoleManager, models.RoleWaiter, models.RoleCashier), h.GetBill)
 		protected.PATCH("/orders/:referenceID/served", middleware.RequireRole(models.RoleOwner, models.RoleManager, models.RoleWaiter), h.OrderServed)

@@ -288,3 +288,49 @@ func (h *WebHandler) DeleteMenuItem(c *gin.Context) {
 		Error: nil,
 	})
 }
+
+func (h *WebHandler) RestoreMenuItem(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	categoryIDStr := c.Param("categoryID")
+	idStr := c.Param("ID")
+	menuIDStr := c.Param("menuID")
+	menuID, err := strconv.ParseInt(menuIDStr, 10, 64)
+	if err != nil {
+		logger.Error("Invalid menu id", err)
+		models.ERROR(c, http.StatusBadRequest, err)
+		return
+	}
+
+	tenantCtx, err := ctxutil.GetTenantFromContext(c)
+	if err != nil {
+		logger.Error("Failed to get the user from the context: ", err)
+		models.ERROR(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	categoryID, err := strconv.ParseInt(categoryIDStr, 10, 64)
+	if err != nil {
+		logger.Error("Invalid category id", err)
+		models.ERROR(c, http.StatusBadRequest, err)
+		return
+	}
+
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		logger.Error("Invalid menu item id", err)
+		models.ERROR(c, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := h.module.RestoreMenuItem(ctx, id, categoryID, menuID, tenantCtx.TenantID); err != nil {
+		logger.Error("Failed to restore menu item", err)
+		models.ERROR(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	models.JSON(c, http.StatusOK, models.Response{
+		Data:  "Menu Item Restored Successfully",
+		Error: nil,
+	})
+}

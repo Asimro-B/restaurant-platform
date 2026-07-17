@@ -17,6 +17,7 @@ type Menu struct {
 	IsActive    bool
 	CreatedAt   pgtype.Timestamptz
 	UpdatedAt   pgtype.Timestamptz
+	DeletedAt   pgtype.Timestamptz
 }
 
 type MenuCategory struct {
@@ -29,6 +30,7 @@ type MenuCategory struct {
 	IsActive    bool
 	CreatedAt   pgtype.Timestamptz
 	UpdatedAt   pgtype.Timestamptz
+	DeletedAt   pgtype.Timestamptz
 }
 
 type MenuItem struct {
@@ -42,6 +44,7 @@ type MenuItem struct {
 	IsAvailable bool
 	CreatedAt   pgtype.Timestamptz
 	UpdatedAt   pgtype.Timestamptz
+	DeletedAt   pgtype.Timestamptz
 }
 
 type Order struct {
@@ -55,6 +58,7 @@ type Order struct {
 	CreatedAt   pgtype.Timestamptz
 	UpdatedAt   pgtype.Timestamptz
 	ReferenceID pgtype.Text
+	DeletedAt   pgtype.Timestamptz
 }
 
 type OrderItem struct {
@@ -80,6 +84,7 @@ type Payment struct {
 	Notes         pgtype.Text
 	CreatedAt     pgtype.Timestamptz
 	UpdatedAt     pgtype.Timestamptz
+	DeletedAt     pgtype.Timestamptz
 }
 
 type Reservation struct {
@@ -129,4 +134,5 @@ type User struct {
 	Phone        pgtype.Text
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
+	DeletedAt    pgtype.Timestamptz
 }

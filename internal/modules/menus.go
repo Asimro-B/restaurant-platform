@@ -3,7 +3,10 @@ package module
 import (
 	"context"
 	db "restaurant-platform/database/sqlc/gen"
+	"restaurant-platform/internal/cache"
+	"restaurant-platform/internal/logger"
 	"restaurant-platform/internal/models"
+	"time"
 )
 
 func (m *WebModule) CreateMenu(ctx context.Context, req models.CreateMenuReq) (models.Menu, error) {
@@ -17,11 +20,29 @@ func (m *WebModule) CreateMenu(ctx context.Context, req models.CreateMenuReq) (m
 	if err != nil {
 		return models.Menu{}, err
 	}
+
+	// Invalidate menus cache for this tenant
+	_ = cache.DeleteByPattern(ctx, cache.TenantMenusPattern(req.TenantID))
 	result := models.ConvertMenuModel(response)
 	return result, nil
 }
 
 func (m *WebModule) ListMenus(ctx context.Context, arg models.ListMenusReq) ([]models.Menu, int64, error) {
+	// Try cache first
+	cacheKey := cache.MenusKey(arg.TenantID)
+	start := time.Now()
+	var cached struct {
+		Menus []models.Menu `json:"menus"`
+		Total int64         `json:"total"`
+	}
+	if err := cache.Get(ctx, cacheKey, &cached); err == nil {
+		logger.Log.Info("cache hit for menus", "duration", time.Since(start))
+		return cached.Menus, cached.Total, nil
+	} else {
+		logger.Log.Info("cache miss for menus", "duration", time.Since(start), "error", err.Error())
+	}
+
+	// cache miss, hit DB
 	response, err := m.persistenceDB.ListMenus(ctx, db.ListMenusParams{
 		TenantID: arg.TenantID,
 		Limit:    int32(arg.Limit),
@@ -38,6 +59,16 @@ func (m *WebModule) ListMenus(ctx context.Context, arg models.ListMenusReq) ([]m
 	}
 
 	result := models.ConvertMenuToModles(response)
+	// store in cache
+	if err = cache.Set(ctx, cacheKey, struct {
+		Menus []models.Menu `json:"menus"`
+		Total int64         `json:"total"`
+	}{result, total}, cache.TTLMenu); err != nil {
+		logger.Log.Error("failed to set menus cache", err)
+	} else {
+		logger.Log.Info("menus cached successfully", "key", cacheKey)
+	}
+
 	return result, total, nil
 }
 
@@ -66,6 +97,8 @@ func (m *WebModule) UpdateMenu(ctx context.Context, arg models.UpdateMenuReq) (m
 		return models.Menu{}, err
 	}
 
+	// Invalidate menus cache for this tenant
+	_ = cache.Delete(ctx, cache.TenantMenusPattern(arg.TenantID))
 	result := models.ConvertMenuModel(response)
 	return result, nil
 }
@@ -78,5 +111,23 @@ func (m *WebModule) DeleteMenu(ctx context.Context, id, tenantID int64) error {
 	if err != nil {
 		return err
 	}
+
+	// Invalidate menus cache for this tenant
+	_ = cache.DeleteByPattern(ctx, cache.TenantMenusPattern(tenantID))
+	return nil
+}
+
+func (m *WebModule) RestoreMenu(ctx context.Context, id, tenantID int64) error {
+	err := m.persistenceDB.RestoreMenu(ctx, db.RestoreMenuParams{
+		ID:       id,
+		TenantID: tenantID,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Invalidate menus cache for this tenant
+	_ = cache.DeleteByPattern(ctx, cache.TenantMenusPattern(tenantID))
+
 	return nil
 }

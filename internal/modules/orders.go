@@ -48,8 +48,8 @@ func (m *WebModule) CreateOrderWithItems(
 func (m *WebModule) ListOrders(ctx context.Context, arg models.ListOrdersReq) ([]models.Order, int64, error) {
 	response, err := m.persistenceDB.ListOrders(ctx, db.ListOrdersParams{
 		TenantID: arg.TenantID,
-		TableID:  arg.TableID,
-		UserID:   arg.UserID,
+		Column2:  arg.Status,
+		Column3:  arg.TableID,
 		Limit:    int32(arg.Limit),
 		Offset:   int32(arg.Offset),
 	})
@@ -59,8 +59,8 @@ func (m *WebModule) ListOrders(ctx context.Context, arg models.ListOrdersReq) ([
 
 	total, err := m.persistenceDB.CountOrders(ctx, db.CountOrdersParams{
 		TenantID: arg.TenantID,
-		TableID:  arg.TableID,
-		UserID:   arg.UserID,
+		Column2:  arg.Status,
+		Column3:  arg.TableID,
 	})
 	if err != nil {
 		return nil, 0, err

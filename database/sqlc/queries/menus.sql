@@ -13,6 +13,7 @@ RETURNING *;
 SELECT *
 FROM menus
 WHERE tenant_id = $1
+  AND deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
 
@@ -20,7 +21,8 @@ LIMIT $2 OFFSET $3;
 SELECT *
 FROM menus
 WHERE id = $1
-  AND tenant_id = $2;
+  AND tenant_id = $2
+  AND deleted_at IS NULL;
 
 -- name: UpdateMenu :one
 UPDATE menus
@@ -34,14 +36,22 @@ WHERE id = $1
 RETURNING *;
 
 -- name: DeleteMenu :exec
-DELETE FROM menus
+UPDATE menus
+SET deleted_at = NOW()
+WHERE id = $1
+  AND tenant_id = $2;
+
+-- name: RestoreMenu :exec
+UPDATE menus
+SET deleted_at = NULL
 WHERE id = $1
   AND tenant_id = $2;
 
 -- name: CountMenus :one
 SELECT COUNT(*)
 FROM menus
-WHERE tenant_id = $1;
+WHERE tenant_id = $1
+  AND deleted_at IS NULL;
 
 -- name: CreateMenuCategory :one
 INSERT INTO menu_categories (
@@ -61,6 +71,7 @@ SELECT *
 FROM menu_categories
 WHERE tenant_id = $1
   AND menu_id = $2
+  AND deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT $3 OFFSET $4;
 
@@ -69,7 +80,8 @@ SELECT *
 FROM menu_categories
 WHERE tenant_id = $1
   AND menu_id = $2
-  AND id = $3;
+  AND id = $3
+  AND deleted_at IS NULL;
 
 -- name: UpdateMenuCategory :one
 UPDATE menu_categories
@@ -85,7 +97,15 @@ WHERE id = $1
 RETURNING *;
 
 -- name: DeleteMenuCategory :exec
-DELETE FROM menu_categories
+UPDATE menu_categories
+SET deleted_at = NOW()
+WHERE id = $1
+  AND menu_id = $2
+  AND tenant_id = $3;
+
+-- name: RestoreMenuCategory :exec
+UPDATE menu_categories
+SET deleted_at = NULL
 WHERE id = $1
   AND menu_id = $2
   AND tenant_id = $3;
@@ -94,7 +114,8 @@ WHERE id = $1
 SELECT COUNT(*)
 FROM menu_categories
 WHERE menu_id = $1
-  AND tenant_id = $2;
+  AND tenant_id = $2
+  AND deleted_at IS NULL;
 
 -- name: CreateMenuItem :one
 INSERT INTO menu_items (
@@ -116,12 +137,13 @@ FROM menu_items
 WHERE tenant_id = $1
   AND category_id = $2
   AND menu_id = $3
+  AND deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT $4 OFFSET $5;
 
 -- name: GetMenuItemByID :one
 SELECT * FROM menu_items
-WHERE id = $1 AND tenant_id = $2;
+WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL;
 
 -- name: UpdateMenuItem :one
 UPDATE menu_items
@@ -138,7 +160,16 @@ WHERE id = $1
 RETURNING *;
 
 -- name: DeleteMenuItem :exec
-DELETE FROM menu_items
+UPDATE menu_items
+SET deleted_at = NOW()
+WHERE id = $1
+  AND category_id = $2
+  AND menu_id = $3
+  AND tenant_id = $4;
+
+-- name: RestoreMenuItem :exec
+UPDATE menu_items
+SET deleted_at = NULL
 WHERE id = $1
   AND category_id = $2
   AND menu_id = $3
@@ -149,4 +180,5 @@ SELECT COUNT(*)
 FROM menu_items
 WHERE category_id = $1
   AND menu_id = $2
-  AND tenant_id = $3;
+  AND tenant_id = $3
+  AND deleted_at IS NULL;
