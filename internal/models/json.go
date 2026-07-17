@@ -3,9 +3,10 @@ package models
 import "github.com/gin-gonic/gin"
 
 type ErrorResponse struct {
-	Error   string `json:"error"`
-	Code    int    `json:"code"`
-	Message string `json:"message"`
+	Error struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	} `json:"error"`
 }
 
 type Response struct {
@@ -33,9 +34,10 @@ func ERROR(c *gin.Context, statusCode int, err error) {
 	c.JSON(statusCode, Response{
 		Data: nil,
 		Error: &ErrorResponse{
-			Error:   err.Error(),
-			Code:    statusCode,
-			Message: err.Error(),
+			Error: struct {
+				Code    int    "json:\"code\""
+				Message string "json:\"message\""
+			}{},
 		},
 	})
 
@@ -47,4 +49,11 @@ func JSON(c *gin.Context, statusCode int, data Response) {
 	c.Writer.WriteHeader(statusCode)
 	c.JSON(statusCode, data)
 	c.Abort()
+}
+
+type WorkflowResponse struct {
+	WorkflowID  string `json:"workflow_id"`
+	RunID       string `json:"run_id"`
+	ReferenceID string `json:"reference_id"`
+	Message     string `json:"message"`
 }

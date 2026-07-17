@@ -49,3 +49,7 @@ infra-down:
 	docker stop restaurant_platform_db
 	docker stop restaurant_platform_redis
 	docker compose -f docker-compose.temporal.yml down
+
+# Generate swagger
+swagger:
+	swag init -g cmd/main.go -o docs

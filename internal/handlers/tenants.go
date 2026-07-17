@@ -25,6 +25,16 @@ func NewWebHandler(webModule *module.WebModule, temporalClient client.Client) *W
 	}
 }
 
+// CreateTenant godoc
+// @Summary      Create a tenant
+// @Description  Register a new restaurant as a tenant
+// @Tags         tenants
+// @Accept       json
+// @Produce      json
+// @Param        request body models.CreateTenantReq true "Tenant details"
+// @Success      201  {object}  models.Response{data=models.Tenant}
+// @Failure      400  {object}  models.ErrorResponse
+// @Router       /tenant [post]
 func (h *WebHandler) CreateTenant(c *gin.Context) {
 	ctx := c.Request.Context()
 

@@ -10,6 +10,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// CreateReservation godoc
+// @Summary      Create a reservation
+// @Description  Create a new table reservation for a customer. Only owners, managers, and waiters can create reservations.
+// @Tags         reservations
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        request  body    models.CreateReservationReq  true  "Reservation details"
+// @Success      201  {object}  models.Response{data=models.Reservation}
+// @Failure      400  {object}  models.ErrorResponse
+// @Failure      401  {object}  models.ErrorResponse
+// @Failure      403  {object}  models.ErrorResponse
+// @Failure      500  {object}  models.ErrorResponse
+// @Router       /reservations [post]
 func (h *WebHandler) CreateReservation(c *gin.Context) {
 	ctx := c.Request.Context()
 
