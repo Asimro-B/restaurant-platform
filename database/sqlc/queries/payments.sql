@@ -27,3 +27,17 @@ FROM orders o
 JOIN order_items oi ON oi.order_id = o.id
 JOIN menu_items mi ON mi.id = oi.menu_item_id
 WHERE o.reference_id = $1 AND o.tenant_id = $2;
+
+-- name: DeletePayment :exec
+UPDATE payments
+SET deleted_at = NOW()
+WHERE id = $1
+    AND order_id = $2
+    AND tenant_id = $3;
+
+-- name: RestorePayment :exec
+UPDATE payments
+SET deleted_at = NULL
+WHERE id = $1
+    AND order_id = $2
+    AND tenant_id = $3;

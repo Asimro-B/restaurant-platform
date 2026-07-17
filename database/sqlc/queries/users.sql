@@ -15,45 +15,21 @@ INSERT INTO users (
 RETURNING *;
 
 -- name: GetUserByEmail :one
-SELECT * FROM users WHERE email=$1 AND tenant_id=$2;
+SELECT * FROM users WHERE email=$1 AND tenant_id=$2 AND deleted_at IS NULL;
 
 -- name: ListUsers :many
-SELECT *
-FROM users
-WHERE tenant_id = sqlc.arg(tenant_id)
-  AND (
-    sqlc.arg(search)::text = ''
-    OR email ILIKE '%' || sqlc.arg(search)::text || '%'
-    OR COALESCE(first_name, '') ILIKE '%' || sqlc.arg(search)::text || '%'
-    OR COALESCE(last_name, '') ILIKE '%' || sqlc.arg(search)::text || '%'
-    OR COALESCE(location, '') ILIKE '%' || sqlc.arg(search)::text || '%'
-    OR COALESCE(mobile_phone, '') ILIKE '%' || sqlc.arg(search)::text || '%'
-    OR COALESCE(phone, '') ILIKE '%' || sqlc.arg(search)::text || '%'
-  )
-  AND (
-    sqlc.arg(role)::text = ''
-    OR role = sqlc.arg(role)::text
-  )
-ORDER BY
-    CASE WHEN sqlc.arg(sort_by)::text = 'email' AND sqlc.arg(sort_order)::text = 'asc' THEN email END ASC,
-    CASE WHEN sqlc.arg(sort_by)::text = 'email' AND sqlc.arg(sort_order)::text = 'desc' THEN email END DESC,
-    CASE WHEN sqlc.arg(sort_by)::text = 'role' AND sqlc.arg(sort_order)::text = 'asc' THEN role END ASC,
-    CASE WHEN sqlc.arg(sort_by)::text = 'role' AND sqlc.arg(sort_order)::text = 'desc' THEN role END DESC,
-    CASE WHEN sqlc.arg(sort_by)::text = 'first_name' AND sqlc.arg(sort_order)::text = 'asc' THEN first_name END ASC,
-    CASE WHEN sqlc.arg(sort_by)::text = 'first_name' AND sqlc.arg(sort_order)::text = 'desc' THEN first_name END DESC,
-    CASE WHEN sqlc.arg(sort_by)::text = 'created_at' AND sqlc.arg(sort_order)::text = 'asc' THEN created_at END ASC,
-    CASE WHEN sqlc.arg(sort_by)::text = 'created_at' AND sqlc.arg(sort_order)::text = 'desc' THEN created_at END DESC,
-    CASE WHEN sqlc.arg(sort_by)::text = 'updated_at' AND sqlc.arg(sort_order)::text = 'asc' THEN updated_at END ASC,
-    CASE WHEN sqlc.arg(sort_by)::text = 'updated_at' AND sqlc.arg(sort_order)::text = 'desc' THEN updated_at END DESC,
-    created_at DESC,
-    id DESC
-LIMIT sqlc.arg(limit_count) OFFSET sqlc.arg(offset_count);
+SELECT * FROM users
+WHERE tenant_id = $1
+  AND deleted_at IS NULL
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3;
 
 -- name: GetUserByID :one
 SELECT *
 FROM users
 WHERE id = $1
-  AND tenant_id = $2;
+  AND tenant_id = $2
+  AND deleted_at IS NULL;
 
 -- name: UpdateUser :one
 UPDATE users
@@ -72,6 +48,13 @@ WHERE id = $1
 RETURNING *;
 
 -- name: DeleteUser :exec
-DELETE FROM users
+UPDATE users
+SET deleted_at = NOW()
+WHERE id = $1
+  AND tenant_id = $2;
+
+-- name: RestoreUser :exec
+UPDATE users
+SET deleted_at = NULL
 WHERE id = $1
   AND tenant_id = $2;

@@ -15,7 +15,7 @@ import (
 const createPayment = `-- name: CreatePayment :one
 INSERT INTO payments(tenant_id, order_id, amount, payment_method, reference, notes)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, tenant_id, order_id, amount, payment_method, status, reference, notes, created_at, updated_at
+RETURNING id, tenant_id, order_id, amount, payment_method, status, reference, notes, created_at, updated_at, deleted_at
 `
 
 type CreatePaymentParams struct {
@@ -48,8 +48,28 @@ func (q *Queries) CreatePayment(ctx context.Context, arg CreatePaymentParams) (P
 		&i.Notes,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const deletePayment = `-- name: DeletePayment :exec
+UPDATE payments
+SET deleted_at = NOW()
+WHERE id = $1
+    AND order_id = $2
+    AND tenant_id = $3
+`
+
+type DeletePaymentParams struct {
+	ID       int64
+	OrderID  int64
+	TenantID int64
+}
+
+func (q *Queries) DeletePayment(ctx context.Context, arg DeletePaymentParams) error {
+	_, err := q.db.Exec(ctx, deletePayment, arg.ID, arg.OrderID, arg.TenantID)
+	return err
 }
 
 const getOrderWithItems = `-- name: GetOrderWithItems :many
@@ -125,11 +145,30 @@ func (q *Queries) GetOrderWithItems(ctx context.Context, arg GetOrderWithItemsPa
 	return items, nil
 }
 
+const restorePayment = `-- name: RestorePayment :exec
+UPDATE payments
+SET deleted_at = NULL
+WHERE id = $1
+    AND order_id = $2
+    AND tenant_id = $3
+`
+
+type RestorePaymentParams struct {
+	ID       int64
+	OrderID  int64
+	TenantID int64
+}
+
+func (q *Queries) RestorePayment(ctx context.Context, arg RestorePaymentParams) error {
+	_, err := q.db.Exec(ctx, restorePayment, arg.ID, arg.OrderID, arg.TenantID)
+	return err
+}
+
 const updatePaymentStatus = `-- name: UpdatePaymentStatus :one
 UPDATE payments
 SET status = $1, updated_at = now()
 WHERE id = $2 AND tenant_id = $3
-RETURNING id, tenant_id, order_id, amount, payment_method, status, reference, notes, created_at, updated_at
+RETURNING id, tenant_id, order_id, amount, payment_method, status, reference, notes, created_at, updated_at, deleted_at
 `
 
 type UpdatePaymentStatusParams struct {
@@ -152,6 +191,7 @@ func (q *Queries) UpdatePaymentStatus(ctx context.Context, arg UpdatePaymentStat
 		&i.Notes,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }

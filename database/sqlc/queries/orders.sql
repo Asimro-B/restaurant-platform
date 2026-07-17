@@ -6,16 +6,16 @@ RETURNING *;
 -- name: ListOrders :many
 SELECT * FROM orders
 WHERE tenant_id = $1
-  AND table_id = $2
-  AND user_id = $3
+  AND ($2::text = '' OR status = $2)
+  AND ($3::bigint = 0 OR table_id = $3)
 ORDER BY created_at DESC
 LIMIT $4 OFFSET $5;
 
 -- name: CountOrders :one
 SELECT COUNT(*) FROM orders
 WHERE tenant_id = $1
-  AND table_id = $2
-  AND user_id=$3;
+  AND ($2::text = '' OR status = $2)
+  AND ($3::bigint = 0 OR table_id = $3);
 
 -- name: GetOrderByID :one
 SELECT * FROM orders
