@@ -42,6 +42,19 @@ func (h *WebHandler) CreateTable(c *gin.Context) {
 	models.JSON(c, http.StatusCreated, models.Response{Data: table, Error: nil})
 }
 
+// ListTables godoc
+// @Summary      List tables
+// @Description  Get all tables for the authenticated tenant
+// @Tags         tables
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        page   query  int  false  "Page number"  default(1)
+// @Param        limit  query  int  false  "Items per page"  default(10)
+// @Success      200  {object}  models.Response{data=[]models.Table}
+// @Failure      401  {object}  models.ErrorResponse
+// @Failure      403  {object}  models.ErrorResponse
+// @Router       /tables [get]
 func (h *WebHandler) ListTables(c *gin.Context) {
 	ctx := c.Request.Context()
 

@@ -10,6 +10,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// CreateMenu godoc
+// @Summary      Create a menus
+// @Description  Register a menus for the authenticated tenant
+// @Tags         menus
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        request body models.CreateMenuReq true "Menu details"
+// @Success      200  {object}  models.Response{data=models.Menu}
+// @Failure      401  {object}  models.ErrorResponse
+// @Failure      403  {object}  models.ErrorResponse
+// @Router       /menus [post]
 func (h *WebHandler) CreateMenu(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -42,6 +54,19 @@ func (h *WebHandler) CreateMenu(c *gin.Context) {
 	models.JSON(c, http.StatusCreated, models.Response{Data: menu, Error: nil})
 }
 
+// ListMenus godoc
+// @Summary      List menus
+// @Description  Get all menus for the authenticated tenant
+// @Tags         menus
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        page   query  int  false  "Page number"  default(1)
+// @Param        limit  query  int  false  "Items per page"  default(10)
+// @Success      200  {object}  models.Response{data=[]models.Menu}
+// @Failure      401  {object}  models.ErrorResponse
+// @Failure      403  {object}  models.ErrorResponse
+// @Router       /menus [get]
 func (h *WebHandler) ListMenus(c *gin.Context) {
 	ctx := c.Request.Context()
 

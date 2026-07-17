@@ -18,6 +18,17 @@ type LoginRequest struct {
 	TenantID int64  `json:"tenant_id,omitempty"`
 }
 
+// HandleLogin godoc
+// @Summary      Login
+// @Description  Authenticate a staff member and return a JWT token
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request body LoginRequest true "Login credentials"
+// @Success      200  {object}  models.Response{data=string}
+// @Failure      400  {object}  models.ErrorResponse
+// @Failure      401  {object}  models.ErrorResponse
+// @Router       /auth/login [post]
 func (h *WebHandler) HandleLogin(c *gin.Context) {
 	ctx := c.Request.Context()
 

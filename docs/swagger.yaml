@@ -1,0 +1,695 @@
+basePath: /api/v1
+definitions:
+  handler.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      tenant_id:
+        type: integer
+    type: object
+  models.CreateMenuReq:
+    properties:
+      description:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      tenant_id:
+        type: integer
+    type: object
+  models.CreateOrderReq:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/models.OrderItemInput'
+        type: array
+      notes:
+        type: string
+      reference_id:
+        type: string
+      status:
+        type: string
+      table_id:
+        type: integer
+      tenant_id:
+        type: integer
+      total_amount:
+        type: number
+      user_id:
+        type: integer
+    type: object
+  models.CreateReservationReq:
+    properties:
+      customer_name:
+        type: string
+      customer_phone:
+        type: string
+      notes:
+        type: string
+      party_size:
+        type: integer
+      reserved_at:
+        type: string
+      table_id:
+        type: integer
+    type: object
+  models.CreateTenantReq:
+    properties:
+      name:
+        type: string
+      slug:
+        type: string
+      status:
+        type: string
+    type: object
+  models.ErrorResponse:
+    properties:
+      error:
+        properties:
+          code:
+            type: integer
+          message:
+            type: string
+        type: object
+    type: object
+  models.Menu:
+    properties:
+      created_at:
+        description: Timestamps
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      name:
+        type: string
+      tenant_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  models.Order:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      notes:
+        type: string
+      status:
+        type: string
+      table_id:
+        type: integer
+      tenant_id:
+        type: integer
+      total_amount:
+        type: number
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  models.OrderItemInput:
+    properties:
+      menu_item_id:
+        type: integer
+      notes:
+        type: string
+      quantity:
+        type: integer
+    type: object
+  models.PaginationMeta:
+    properties:
+      has_next:
+        type: boolean
+      has_prev:
+        type: boolean
+      limit:
+        type: integer
+      next_page_token:
+        type: string
+      page:
+        type: integer
+      page_size:
+        type: integer
+      prev_page_token:
+        type: string
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  models.Payment:
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      id:
+        type: integer
+      notes:
+        type: string
+      order_id:
+        type: integer
+      payment_method:
+        type: string
+      reference:
+        description: TeleBirr transaction ID, card ref
+        type: string
+      status:
+        type: string
+      tenant_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  models.ProcessPaymentReq:
+    properties:
+      notes:
+        type: string
+      payment_method:
+        description: cash | card | telebirr
+        type: string
+      reference:
+        description: TeleBirr transaction ID, card ref
+        type: string
+      table_id:
+        type: integer
+    type: object
+  models.Reservation:
+    properties:
+      created_at:
+        type: string
+      customer_name:
+        type: string
+      customer_phone:
+        type: string
+      id:
+        type: integer
+      notes:
+        type: string
+      party_size:
+        type: integer
+      reserved_at:
+        type: string
+      status:
+        $ref: '#/definitions/models.ReservationStatus'
+      table_id:
+        type: integer
+      tenant_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  models.ReservationStatus:
+    enum:
+    - pending
+    - confirmed
+    - cancelled
+    - completed
+    type: string
+    x-enum-varnames:
+    - ReservationStatusPending
+    - ReservationStatusConfirmed
+    - ReservationStatusCancelled
+    - ReservationStatusCompleted
+  models.Response:
+    properties:
+      data: {}
+      error:
+        $ref: '#/definitions/models.ErrorResponse'
+      pagination:
+        $ref: '#/definitions/models.PaginationMeta'
+    type: object
+  models.Table:
+    properties:
+      capacity:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      status:
+        type: string
+      tenant_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  models.Tenant:
+    properties:
+      created_at:
+        description: Timestamps
+        type: string
+      deleted_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      slug:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.WorkflowResponse:
+    properties:
+      message:
+        type: string
+      reference_id:
+        type: string
+      run_id:
+        type: string
+      workflow_id:
+        type: string
+    type: object
+host: localhost:8000
+info:
+  contact:
+    name: Asimro
+    url: https://github.com/yourusername/restaurant-platform
+  description: A production-grade multi-tenant restaurant management backend built
+    with Go. Features durable order workflows with Temporal, real-time notifications
+    with Pusher, Redis caching, and role-based access control.
+  title: Restaurant Management Platform API
+  version: "1.0"
+paths:
+  //orders/:referenceID/bill:
+    get:
+      consumes:
+      - application/json
+      description: Get the bill with reference id
+      parameters:
+      - description: Reference ID
+        in: path
+        name: referenceID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Order'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get bill
+      tags:
+      - orders
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a staff member and return a JWT token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.Response'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Login
+      tags:
+      - auth
+  /menus:
+    get:
+      consumes:
+      - application/json
+      description: Get all menus for the authenticated tenant
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Menu'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List menus
+      tags:
+      - menus
+    post:
+      consumes:
+      - application/json
+      description: Register a menus for the authenticated tenant
+      parameters:
+      - description: Menu details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateMenuReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Menu'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a menus
+      tags:
+      - menus
+  /orders/{referenceID}/kitchen-start:
+    patch:
+      consumes:
+      - application/json
+      description: Signals the workflow that the kitchen has started preparing the
+        order. Only owners and kitchen staff can perform this action.
+      parameters:
+      - description: Order reference ID
+        in: path
+        name: referenceID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Start kitchen preparation
+      tags:
+      - orders
+  /orders/{referenceID}/pay:
+    post:
+      consumes:
+      - application/json
+      description: Process payment for a served order. Supports Cash, Card, and TeleBirr.
+        Automatically releases the table on success.
+      parameters:
+      - description: Order reference ID
+        in: path
+        name: referenceID
+        required: true
+        type: string
+      - description: Payment details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ProcessPaymentReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Payment'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Process payment
+      tags:
+      - orders
+  /reservations:
+    post:
+      consumes:
+      - application/json
+      description: Create a new table reservation for a customer. Only owners, managers,
+        and waiters can create reservations.
+      parameters:
+      - description: Reservation details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateReservationReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Reservation'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a reservation
+      tags:
+      - reservations
+  /tables:
+    get:
+      consumes:
+      - application/json
+      description: Get all tables for the authenticated tenant
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Table'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List tables
+      tags:
+      - tables
+  /tables/{tableID}/orders:
+    post:
+      consumes:
+      - application/json
+      description: Place a new order for a table. Starts a Temporal workflow that
+        validates items, persists the order atomically, and notifies the kitchen via
+        Pusher.
+      parameters:
+      - description: Table ID
+        in: path
+        name: tableID
+        required: true
+        type: integer
+      - description: Order details with items
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateOrderReq'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.WorkflowResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create an order
+      tags:
+      - orders
+  /tenant:
+    post:
+      consumes:
+      - application/json
+      description: Register a new restaurant as a tenant
+      parameters:
+      - description: Tenant details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateTenantReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Tenant'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Create a tenant
+      tags:
+      - tenants
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

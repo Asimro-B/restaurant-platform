@@ -83,4 +83,5 @@ func RegisterRoutes(r *gin.RouterGroup, h *handler.WebHandler) {
 		protected.PATCH("/reservations/:reservationID/cancel", middleware.RequireRole(models.RoleOwner, models.RoleManager), h.CancelReservation)
 		protected.PATCH("/reservations/:reservationID/complete", middleware.RequireRole(models.RoleOwner, models.RoleManager), h.CompleteReservation)
 	}
+
 }

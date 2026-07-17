@@ -11,6 +11,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// ProcessPayment godoc
+// @Summary      Process payment
+// @Description  Process payment for a served order. Supports Cash, Card, and TeleBirr. Automatically releases the table on success.
+// @Tags         orders
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        referenceID  path    string                      true  "Order reference ID"
+// @Param        request      body    models.ProcessPaymentReq    true  "Payment details"
+// @Success      200  {object}  models.Response{data=models.Payment}
+// @Failure      400  {object}  models.ErrorResponse
+// @Failure      401  {object}  models.ErrorResponse
+// @Failure      403  {object}  models.ErrorResponse
+// @Router       /orders/{referenceID}/pay [post]
 func (h *WebHandler) ProcessPayment(c *gin.Context) {
 	ctx := c.Request.Context()
 	referenceID := c.Param("referenceID")
@@ -100,6 +114,18 @@ func (h *WebHandler) ProcessPayment(c *gin.Context) {
 	})
 }
 
+// GetBill godoc
+// @Summary      Get bill
+// @Description  Get the bill with reference id
+// @Tags         orders
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        referenceID  path    int                     true  "Reference ID"
+// @Success      200  {object}  models.Response{data=[]models.Order}
+// @Failure      401  {object}  models.ErrorResponse
+// @Failure      403  {object}  models.ErrorResponse
+// @Router       //orders/:referenceID/bill [get]
 func (h *WebHandler) GetBill(c *gin.Context) {
 	ctx := c.Request.Context()
 	referenceID := c.Param("referenceID")

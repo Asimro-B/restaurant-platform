@@ -17,8 +17,12 @@ import (
 	"syscall"
 	"time"
 
+	_ "restaurant-platform/docs"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func Initiate() {
@@ -68,6 +72,9 @@ func Initiate() {
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
+
+	// Swagger
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	api := r.Group("/api/v1")
 	route.RegisterRoutes(api, webHandler)
 

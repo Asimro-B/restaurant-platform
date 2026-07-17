@@ -14,6 +14,20 @@ import (
 	"go.temporal.io/sdk/client"
 )
 
+// CreateOrder godoc
+// @Summary      Create an order
+// @Description  Place a new order for a table. Starts a Temporal workflow that validates items, persists the order atomically, and notifies the kitchen via Pusher.
+// @Tags         orders
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        tableID  path    int                     true  "Table ID"
+// @Param        request  body    models.CreateOrderReq   true  "Order details with items"
+// @Success      202  {object}  models.Response{data=models.WorkflowResponse}
+// @Failure      400  {object}  models.ErrorResponse
+// @Failure      401  {object}  models.ErrorResponse
+// @Failure      403  {object}  models.ErrorResponse
+// @Router       /tables/{tableID}/orders [post]
 func (h *WebHandler) CreateOrder(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -283,6 +297,19 @@ func (h *WebHandler) DeleteOrder(c *gin.Context) {
 	})
 }
 
+// KitchenStart godoc
+// @Summary      Start kitchen preparation
+// @Description  Signals the workflow that the kitchen has started preparing the order. Only owners and kitchen staff can perform this action.
+// @Tags         orders
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        referenceID  path    string  true  "Order reference ID"
+// @Success      200  {object}  models.Response
+// @Failure      401  {object}  models.ErrorResponse
+// @Failure      403  {object}  models.ErrorResponse
+// @Failure      500  {object}  models.ErrorResponse
+// @Router       /orders/{referenceID}/kitchen-start [patch]
 func (h *WebHandler) KitchenStart(c *gin.Context) {
 	referenceID := c.Param("referenceID")
 
