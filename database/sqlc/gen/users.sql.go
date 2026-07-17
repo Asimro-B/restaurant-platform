@@ -25,7 +25,7 @@ INSERT INTO users (
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8, $9
 )
-RETURNING id, tenant_id, email, password_hash, role, first_name, last_name, location, mobile_phone, phone, created_at, updated_at
+RETURNING id, tenant_id, email, password_hash, role, first_name, last_name, location, mobile_phone, phone, created_at, updated_at, deleted_at
 `
 
 type CreateUserParams struct {
@@ -66,12 +66,14 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Phone,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const deleteUser = `-- name: DeleteUser :exec
-DELETE FROM users
+UPDATE users
+SET deleted_at = NOW()
 WHERE id = $1
   AND tenant_id = $2
 `
@@ -87,7 +89,7 @@ func (q *Queries) DeleteUser(ctx context.Context, arg DeleteUserParams) error {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, tenant_id, email, password_hash, role, first_name, last_name, location, mobile_phone, phone, created_at, updated_at FROM users WHERE email=$1 AND tenant_id=$2
+SELECT id, tenant_id, email, password_hash, role, first_name, last_name, location, mobile_phone, phone, created_at, updated_at, deleted_at FROM users WHERE email=$1 AND tenant_id=$2 AND deleted_at IS NULL
 `
 
 type GetUserByEmailParams struct {
@@ -111,15 +113,17 @@ func (q *Queries) GetUserByEmail(ctx context.Context, arg GetUserByEmailParams) 
 		&i.Phone,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, tenant_id, email, password_hash, role, first_name, last_name, location, mobile_phone, phone, created_at, updated_at
+SELECT id, tenant_id, email, password_hash, role, first_name, last_name, location, mobile_phone, phone, created_at, updated_at, deleted_at
 FROM users
 WHERE id = $1
   AND tenant_id = $2
+  AND deleted_at IS NULL
 `
 
 type GetUserByIDParams struct {
@@ -143,63 +147,27 @@ func (q *Queries) GetUserByID(ctx context.Context, arg GetUserByIDParams) (User,
 		&i.Phone,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, tenant_id, email, password_hash, role, first_name, last_name, location, mobile_phone, phone, created_at, updated_at
-FROM users
+SELECT id, tenant_id, email, password_hash, role, first_name, last_name, location, mobile_phone, phone, created_at, updated_at, deleted_at FROM users
 WHERE tenant_id = $1
-  AND (
-    $2::text = ''
-    OR email ILIKE '%' || $2::text || '%'
-    OR COALESCE(first_name, '') ILIKE '%' || $2::text || '%'
-    OR COALESCE(last_name, '') ILIKE '%' || $2::text || '%'
-    OR COALESCE(location, '') ILIKE '%' || $2::text || '%'
-    OR COALESCE(mobile_phone, '') ILIKE '%' || $2::text || '%'
-    OR COALESCE(phone, '') ILIKE '%' || $2::text || '%'
-  )
-  AND (
-    $3::text = ''
-    OR role = $3::text
-  )
-ORDER BY
-    CASE WHEN $4::text = 'email' AND $5::text = 'asc' THEN email END ASC,
-    CASE WHEN $4::text = 'email' AND $5::text = 'desc' THEN email END DESC,
-    CASE WHEN $4::text = 'role' AND $5::text = 'asc' THEN role END ASC,
-    CASE WHEN $4::text = 'role' AND $5::text = 'desc' THEN role END DESC,
-    CASE WHEN $4::text = 'first_name' AND $5::text = 'asc' THEN first_name END ASC,
-    CASE WHEN $4::text = 'first_name' AND $5::text = 'desc' THEN first_name END DESC,
-    CASE WHEN $4::text = 'created_at' AND $5::text = 'asc' THEN created_at END ASC,
-    CASE WHEN $4::text = 'created_at' AND $5::text = 'desc' THEN created_at END DESC,
-    CASE WHEN $4::text = 'updated_at' AND $5::text = 'asc' THEN updated_at END ASC,
-    CASE WHEN $4::text = 'updated_at' AND $5::text = 'desc' THEN updated_at END DESC,
-    created_at DESC,
-    id DESC
-LIMIT $7 OFFSET $6
+  AND deleted_at IS NULL
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3
 `
 
 type ListUsersParams struct {
-	TenantID    int64
-	Search      string
-	Role        string
-	SortBy      string
-	SortOrder   string
-	OffsetCount int32
-	LimitCount  int32
+	TenantID int64
+	Limit    int32
+	Offset   int32
 }
 
 func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error) {
-	rows, err := q.db.Query(ctx, listUsers,
-		arg.TenantID,
-		arg.Search,
-		arg.Role,
-		arg.SortBy,
-		arg.SortOrder,
-		arg.OffsetCount,
-		arg.LimitCount,
-	)
+	rows, err := q.db.Query(ctx, listUsers, arg.TenantID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -220,6 +188,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 			&i.Phone,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -229,6 +198,23 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 		return nil, err
 	}
 	return items, nil
+}
+
+const restoreUser = `-- name: RestoreUser :exec
+UPDATE users
+SET deleted_at = NULL
+WHERE id = $1
+  AND tenant_id = $2
+`
+
+type RestoreUserParams struct {
+	ID       int64
+	TenantID int64
+}
+
+func (q *Queries) RestoreUser(ctx context.Context, arg RestoreUserParams) error {
+	_, err := q.db.Exec(ctx, restoreUser, arg.ID, arg.TenantID)
+	return err
 }
 
 const updateUser = `-- name: UpdateUser :one
@@ -245,7 +231,7 @@ SET
     updated_at = NOW()
 WHERE id = $1
   AND tenant_id = $2
-RETURNING id, tenant_id, email, password_hash, role, first_name, last_name, location, mobile_phone, phone, created_at, updated_at
+RETURNING id, tenant_id, email, password_hash, role, first_name, last_name, location, mobile_phone, phone, created_at, updated_at, deleted_at
 `
 
 type UpdateUserParams struct {
@@ -288,6 +274,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.Phone,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }

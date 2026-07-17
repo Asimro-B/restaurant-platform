@@ -75,12 +75,12 @@ func ConvertOrderModels(orders []db.Order) []Order {
 }
 
 type ListOrdersReq struct {
-	TenantID int64 `json:"tenant_id"`
-	TableID  int64 `json:"table_id"`
-	UserID   int64 `json:"user_id"`
-	Page     int   `json:"page"`
-	Limit    int   `json:"limit"`
-	Offset   int   `json:"offset"`
+	TenantID int64  `json:"tenant_id"`
+	TableID  int64  `json:"table_id"`
+	Status   string `json:"status"`
+	Page     int    `json:"page"`
+	Limit    int    `json:"limit"`
+	Offset   int    `json:"offset"`
 }
 
 type UpdateOrderStatusReq struct {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	db "restaurant-platform/database/sqlc/gen"
+	"restaurant-platform/internal/cache"
 	"restaurant-platform/internal/models"
 
 	"github.com/shopspring/decimal"
@@ -37,6 +38,15 @@ func (m *WebModule) ProcessPayment(ctx context.Context, tenantID, orderID int64,
 }
 
 func (m *WebModule) GetBill(ctx context.Context, referenceID string, tenantID int64) (*models.BillResponse, error) {
+	// Try cache first
+	cacheKey := cache.BillKey(referenceID)
+	var cached models.BillResponse
+
+	if err := cache.Get(ctx, cacheKey, cached); err == nil {
+		return &cached, nil
+	}
+
+	// cache miss hit
 	rows, err := m.persistenceDB.GetOrderWithItems(ctx, db.GetOrderWithItemsParams{
 		ReferenceID: models.ToPGText(referenceID),
 		TenantID:    tenantID,
@@ -70,6 +80,8 @@ func (m *WebModule) GetBill(ctx context.Context, referenceID string, tenantID in
 			Notes:        row.ItemNotes.String,
 		})
 	}
+	// cache the bill (long TTL-- bills don't change)
+	_ = cache.Set(ctx, cacheKey, bill, cache.TTLBill)
 
 	return bill, nil
 }

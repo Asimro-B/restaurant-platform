@@ -9,33 +9,36 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// role hierarchy: higher index have more permissions
-var roleHierarchy = map[models.UserRole]int{
-	models.RoleCasher:  1,
-	models.RoleKitchen: 2,
-	models.RoleWaiter:  3,
-	models.RoleManager: 4,
-	models.RoleOwner:   5,
-}
+// // role hierarchy: higher index have more permissions
+// var roleHierarchy = map[models.UserRole]int{
+// 	models.RoleCasher:  1,
+// 	models.RoleKitchen: 2,
+// 	models.RoleWaiter:  3,
+// 	models.RoleManager: 4,
+// 	models.RoleOwner:   5,
+// }
 
-// require role returns middleware that checks if the user have at least the required role level
-func RequireRole(required models.UserRole) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		tenantCtx, err := ctxutil.GetTenantFromContext(ctx)
+// // require role returns middleware that checks if the user have at least the required role level
+
+// RequireRole checks if the user has ONE OF the allowed roles
+func RequireRole(allowed ...models.UserRole) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tenantCtx, err := ctxutil.GetTenantFromContext(c)
 		if err != nil {
-			models.ERROR(ctx, http.StatusUnauthorized, err)
-			ctx.Abort()
+			models.ERROR(c, http.StatusUnauthorized, err)
+			c.Abort()
 			return
 		}
 
-		userLevel := roleHierarchy[models.UserRole(tenantCtx.Role)]
-		requiredLevel := roleHierarchy[required]
-
-		if userLevel < requiredLevel {
-			models.ERROR(ctx, http.StatusForbidden, fmt.Errorf("Insufficient permissions: required %s or above", required))
-			ctx.Abort()
-			return
+		userRole := models.UserRole(tenantCtx.Role)
+		for _, role := range allowed {
+			if userRole == role {
+				c.Next()
+				return
+			}
 		}
-		ctx.Next()
+
+		models.ERROR(c, http.StatusForbidden, fmt.Errorf("insufficient permission"))
+		c.Abort()
 	}
 }

@@ -84,13 +84,9 @@ type GetUserByEmailReq struct {
 }
 
 type ListUsersReq struct {
-	TenantID    int64  `json:"tenant_id"`
-	Search      string `json:"search"`
-	Role        string `json:"role"`
-	SortBy      string `json:"sort_by"`
-	SortOrder   string `json:"sort_order"`
-	LimitCount  int32  `json:"limit_count"`
-	OffsetCount int32  `json:"offset_count"`
+	TenantID int64 `json:"tenant_id"`
+	Limit    int   `json:"limit"`
+	Offset   int   `json:"offset"`
 }
 
 type UpdateUserReq struct {

@@ -188,10 +188,37 @@ func (h *WebHandler) DeleteMenu(c *gin.Context) {
 	}
 
 	if err := h.module.DeleteMenu(ctx, id, tenantCtx.TenantID); err != nil {
-		logger.Error("Failed to update menu", err)
+		logger.Error("Failed to delete menu", err)
 		models.ERROR(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	models.JSON(c, http.StatusOK, models.Response{Data: "Menu Deleted Successfully", Error: nil})
+}
+
+func (h *WebHandler) RestoreMenu(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	IDStr := c.Param("menuID")
+
+	tenantCtx, err := ctxutil.GetTenantFromContext(c)
+	if err != nil {
+		logger.Error("Failed to get the user from the context: ", err)
+		models.ERROR(c, http.StatusInternalServerError, err)
+		return
+	}
+	id, err := strconv.ParseInt(IDStr, 10, 64)
+	if err != nil {
+		logger.Error("Inalid menu id", err)
+		models.ERROR(c, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := h.module.RestoreMenu(ctx, id, tenantCtx.TenantID); err != nil {
+		logger.Error("Failed to restore menu", err)
+		models.ERROR(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	models.JSON(c, http.StatusOK, models.Response{Data: "Menu Restored Successfully", Error: nil})
 }

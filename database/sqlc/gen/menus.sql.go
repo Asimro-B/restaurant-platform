@@ -17,6 +17,7 @@ SELECT COUNT(*)
 FROM menu_categories
 WHERE menu_id = $1
   AND tenant_id = $2
+  AND deleted_at IS NULL
 `
 
 type CountMenuCategoriesParams struct {
@@ -37,6 +38,7 @@ FROM menu_items
 WHERE category_id = $1
   AND menu_id = $2
   AND tenant_id = $3
+  AND deleted_at IS NULL
 `
 
 type CountMenuItemsParams struct {
@@ -56,6 +58,7 @@ const countMenus = `-- name: CountMenus :one
 SELECT COUNT(*)
 FROM menus
 WHERE tenant_id = $1
+  AND deleted_at IS NULL
 `
 
 func (q *Queries) CountMenus(ctx context.Context, tenantID int64) (int64, error) {
@@ -74,7 +77,7 @@ INSERT INTO menus (
 ) VALUES (
     $1, $2, $3, $4
 )
-RETURNING id, tenant_id, name, description, is_active, created_at, updated_at
+RETURNING id, tenant_id, name, description, is_active, created_at, updated_at, deleted_at
 `
 
 type CreateMenuParams struct {
@@ -100,6 +103,7 @@ func (q *Queries) CreateMenu(ctx context.Context, arg CreateMenuParams) (Menu, e
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -115,7 +119,7 @@ INSERT INTO menu_categories (
 ) VALUES (
   $1, $2, $3, $4, $5, $6
 )
-RETURNING id, tenant_id, menu_id, name, description, sort_order, is_active, created_at, updated_at
+RETURNING id, tenant_id, menu_id, name, description, sort_order, is_active, created_at, updated_at, deleted_at
 `
 
 type CreateMenuCategoryParams struct {
@@ -147,6 +151,7 @@ func (q *Queries) CreateMenuCategory(ctx context.Context, arg CreateMenuCategory
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -163,7 +168,7 @@ INSERT INTO menu_items (
 ) VALUES (
   $1, $2, $3, $4, $5, $6, $7
 )
-RETURNING id, tenant_id, category_id, menu_id, name, description, price, is_available, created_at, updated_at
+RETURNING id, tenant_id, category_id, menu_id, name, description, price, is_available, created_at, updated_at, deleted_at
 `
 
 type CreateMenuItemParams struct {
@@ -198,12 +203,14 @@ func (q *Queries) CreateMenuItem(ctx context.Context, arg CreateMenuItemParams) 
 		&i.IsAvailable,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const deleteMenu = `-- name: DeleteMenu :exec
-DELETE FROM menus
+UPDATE menus
+SET deleted_at = NOW()
 WHERE id = $1
   AND tenant_id = $2
 `
@@ -219,7 +226,8 @@ func (q *Queries) DeleteMenu(ctx context.Context, arg DeleteMenuParams) error {
 }
 
 const deleteMenuCategory = `-- name: DeleteMenuCategory :exec
-DELETE FROM menu_categories
+UPDATE menu_categories
+SET deleted_at = NOW()
 WHERE id = $1
   AND menu_id = $2
   AND tenant_id = $3
@@ -237,7 +245,8 @@ func (q *Queries) DeleteMenuCategory(ctx context.Context, arg DeleteMenuCategory
 }
 
 const deleteMenuItem = `-- name: DeleteMenuItem :exec
-DELETE FROM menu_items
+UPDATE menu_items
+SET deleted_at = NOW()
 WHERE id = $1
   AND category_id = $2
   AND menu_id = $3
@@ -262,10 +271,11 @@ func (q *Queries) DeleteMenuItem(ctx context.Context, arg DeleteMenuItemParams) 
 }
 
 const getMenuByID = `-- name: GetMenuByID :one
-SELECT id, tenant_id, name, description, is_active, created_at, updated_at
+SELECT id, tenant_id, name, description, is_active, created_at, updated_at, deleted_at
 FROM menus
 WHERE id = $1
   AND tenant_id = $2
+  AND deleted_at IS NULL
 `
 
 type GetMenuByIDParams struct {
@@ -284,16 +294,18 @@ func (q *Queries) GetMenuByID(ctx context.Context, arg GetMenuByIDParams) (Menu,
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const getMenuCategoryByID = `-- name: GetMenuCategoryByID :one
-SELECT id, tenant_id, menu_id, name, description, sort_order, is_active, created_at, updated_at
+SELECT id, tenant_id, menu_id, name, description, sort_order, is_active, created_at, updated_at, deleted_at
 FROM menu_categories
 WHERE tenant_id = $1
   AND menu_id = $2
   AND id = $3
+  AND deleted_at IS NULL
 `
 
 type GetMenuCategoryByIDParams struct {
@@ -315,13 +327,14 @@ func (q *Queries) GetMenuCategoryByID(ctx context.Context, arg GetMenuCategoryBy
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const getMenuItemByID = `-- name: GetMenuItemByID :one
-SELECT id, tenant_id, category_id, menu_id, name, description, price, is_available, created_at, updated_at FROM menu_items
-WHERE id = $1 AND tenant_id = $2
+SELECT id, tenant_id, category_id, menu_id, name, description, price, is_available, created_at, updated_at, deleted_at FROM menu_items
+WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL
 `
 
 type GetMenuItemByIDParams struct {
@@ -343,15 +356,17 @@ func (q *Queries) GetMenuItemByID(ctx context.Context, arg GetMenuItemByIDParams
 		&i.IsAvailable,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listMenuCategories = `-- name: ListMenuCategories :many
-SELECT id, tenant_id, menu_id, name, description, sort_order, is_active, created_at, updated_at
+SELECT id, tenant_id, menu_id, name, description, sort_order, is_active, created_at, updated_at, deleted_at
 FROM menu_categories
 WHERE tenant_id = $1
   AND menu_id = $2
+  AND deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT $3 OFFSET $4
 `
@@ -387,6 +402,7 @@ func (q *Queries) ListMenuCategories(ctx context.Context, arg ListMenuCategories
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -399,11 +415,12 @@ func (q *Queries) ListMenuCategories(ctx context.Context, arg ListMenuCategories
 }
 
 const listMenuItems = `-- name: ListMenuItems :many
-SELECT id, tenant_id, category_id, menu_id, name, description, price, is_available, created_at, updated_at
+SELECT id, tenant_id, category_id, menu_id, name, description, price, is_available, created_at, updated_at, deleted_at
 FROM menu_items
 WHERE tenant_id = $1
   AND category_id = $2
   AND menu_id = $3
+  AND deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT $4 OFFSET $5
 `
@@ -442,6 +459,7 @@ func (q *Queries) ListMenuItems(ctx context.Context, arg ListMenuItemsParams) ([
 			&i.IsAvailable,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -454,9 +472,10 @@ func (q *Queries) ListMenuItems(ctx context.Context, arg ListMenuItemsParams) ([
 }
 
 const listMenus = `-- name: ListMenus :many
-SELECT id, tenant_id, name, description, is_active, created_at, updated_at
+SELECT id, tenant_id, name, description, is_active, created_at, updated_at, deleted_at
 FROM menus
 WHERE tenant_id = $1
+  AND deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
 `
@@ -484,6 +503,7 @@ func (q *Queries) ListMenus(ctx context.Context, arg ListMenusParams) ([]Menu, e
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -495,6 +515,68 @@ func (q *Queries) ListMenus(ctx context.Context, arg ListMenusParams) ([]Menu, e
 	return items, nil
 }
 
+const restoreMenu = `-- name: RestoreMenu :exec
+UPDATE menus
+SET deleted_at = NULL
+WHERE id = $1
+  AND tenant_id = $2
+`
+
+type RestoreMenuParams struct {
+	ID       int64
+	TenantID int64
+}
+
+func (q *Queries) RestoreMenu(ctx context.Context, arg RestoreMenuParams) error {
+	_, err := q.db.Exec(ctx, restoreMenu, arg.ID, arg.TenantID)
+	return err
+}
+
+const restoreMenuCategory = `-- name: RestoreMenuCategory :exec
+UPDATE menu_categories
+SET deleted_at = NULL
+WHERE id = $1
+  AND menu_id = $2
+  AND tenant_id = $3
+`
+
+type RestoreMenuCategoryParams struct {
+	ID       int64
+	MenuID   int64
+	TenantID int64
+}
+
+func (q *Queries) RestoreMenuCategory(ctx context.Context, arg RestoreMenuCategoryParams) error {
+	_, err := q.db.Exec(ctx, restoreMenuCategory, arg.ID, arg.MenuID, arg.TenantID)
+	return err
+}
+
+const restoreMenuItem = `-- name: RestoreMenuItem :exec
+UPDATE menu_items
+SET deleted_at = NULL
+WHERE id = $1
+  AND category_id = $2
+  AND menu_id = $3
+  AND tenant_id = $4
+`
+
+type RestoreMenuItemParams struct {
+	ID         int64
+	CategoryID int64
+	MenuID     int64
+	TenantID   int64
+}
+
+func (q *Queries) RestoreMenuItem(ctx context.Context, arg RestoreMenuItemParams) error {
+	_, err := q.db.Exec(ctx, restoreMenuItem,
+		arg.ID,
+		arg.CategoryID,
+		arg.MenuID,
+		arg.TenantID,
+	)
+	return err
+}
+
 const updateMenu = `-- name: UpdateMenu :one
 UPDATE menus
 SET
@@ -504,7 +586,7 @@ SET
     updated_at = NOW()
 WHERE id = $1
   AND tenant_id = $2
-RETURNING id, tenant_id, name, description, is_active, created_at, updated_at
+RETURNING id, tenant_id, name, description, is_active, created_at, updated_at, deleted_at
 `
 
 type UpdateMenuParams struct {
@@ -532,6 +614,7 @@ func (q *Queries) UpdateMenu(ctx context.Context, arg UpdateMenuParams) (Menu, e
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -547,7 +630,7 @@ SET
 WHERE id = $1
   AND menu_id = $2
   AND tenant_id = $3
-RETURNING id, tenant_id, menu_id, name, description, sort_order, is_active, created_at, updated_at
+RETURNING id, tenant_id, menu_id, name, description, sort_order, is_active, created_at, updated_at, deleted_at
 `
 
 type UpdateMenuCategoryParams struct {
@@ -581,6 +664,7 @@ func (q *Queries) UpdateMenuCategory(ctx context.Context, arg UpdateMenuCategory
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -597,7 +681,7 @@ WHERE id = $1
   AND category_id = $2
   AND menu_id = $3
   AND tenant_id = $4
-RETURNING id, tenant_id, category_id, menu_id, name, description, price, is_available, created_at, updated_at
+RETURNING id, tenant_id, category_id, menu_id, name, description, price, is_available, created_at, updated_at, deleted_at
 `
 
 type UpdateMenuItemParams struct {
@@ -634,6 +718,7 @@ func (q *Queries) UpdateMenuItem(ctx context.Context, arg UpdateMenuItemParams) 
 		&i.IsAvailable,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }

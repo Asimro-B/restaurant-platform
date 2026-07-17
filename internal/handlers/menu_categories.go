@@ -254,3 +254,42 @@ func (h *WebHandler) DeleteMenuCategory(c *gin.Context) {
 		Error: nil,
 	})
 }
+
+func (h *WebHandler) RestoreMenuCategory(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	menuIDStr := c.Param("menuID")
+	idStr := c.Param("categoryID")
+
+	tenantCtx, err := ctxutil.GetTenantFromContext(c)
+	if err != nil {
+		logger.Error("Failed to get the user from the context: ", err)
+		models.ERROR(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	menuID, err := strconv.ParseInt(menuIDStr, 10, 64)
+	if err != nil {
+		logger.Error("Invalid menu id", err)
+		models.ERROR(c, http.StatusBadRequest, err)
+		return
+	}
+
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		logger.Error("Invalid category id", err)
+		models.ERROR(c, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := h.module.RestoreMenuCategory(ctx, id, menuID, tenantCtx.TenantID); err != nil {
+		logger.Error("Failed to restore menu category", err)
+		models.ERROR(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	models.JSON(c, http.StatusOK, models.Response{
+		Data:  "Menu Category Restored Successfully",
+		Error: nil,
+	})
+}
