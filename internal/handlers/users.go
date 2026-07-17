@@ -75,13 +75,9 @@ func (h *WebHandler) ListUsers(c *gin.Context) {
 
 	offset := (page - 1) * limit
 	users, err := h.module.ListUsers(ctx, models.ListUsersReq{
-		TenantID:    tenantCtx.TenantID,
-		Search:      c.Query("search"),
-		Role:        tenantCtx.Role,
-		SortBy:      queryDefault(c, "sort_by", "created_at"),
-		SortOrder:   queryDefault(c, "sort_order", "desc"),
-		LimitCount:  int32(limit),
-		OffsetCount: int32(offset),
+		TenantID: tenantCtx.TenantID,
+		Limit:    limit,
+		Offset:   offset,
 	})
 	if err != nil {
 		logger.Error("failed to list users")
@@ -235,6 +231,36 @@ func (h *WebHandler) DeleteUser(c *gin.Context) {
 
 	models.JSON(c, http.StatusOK, models.Response{
 		Data:  "User deleted Successfully",
+		Error: nil,
+	})
+}
+
+func (h *WebHandler) RestoreUser(c *gin.Context) {
+	ctx := c.Request.Context()
+	userIDStr := c.Param("userID")
+
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil {
+		logger.Error("User id not valid: ", err)
+		models.ERROR(c, http.StatusBadRequest, err)
+		return
+	}
+
+	tenantCtx, err := ctxutil.GetTenantFromContext(c)
+	if err != nil {
+		logger.Error("Failed to get the user from the context: ", err)
+		models.ERROR(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	err = h.module.RestoreUser(ctx, userID, tenantCtx.TenantID)
+	if err != nil {
+		handleUserError(c, err, "failed to restore user")
+		return
+	}
+
+	models.JSON(c, http.StatusOK, models.Response{
+		Data:  "User restored Successfully",
 		Error: nil,
 	})
 }
