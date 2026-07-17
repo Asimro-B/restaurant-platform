@@ -1,7 +1,12 @@
 package initiator
 
 import (
+	"context"
+	"log"
+	"net/http"
 	"os"
+	"os/signal"
+	"restaurant-platform/internal/cache"
 	handler "restaurant-platform/internal/handlers"
 	"restaurant-platform/internal/logger"
 	module "restaurant-platform/internal/modules"
@@ -9,6 +14,8 @@ import (
 	route "restaurant-platform/internal/routers"
 	"restaurant-platform/internal/worker"
 	orderworkflow "restaurant-platform/internal/workflows/order"
+	"syscall"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -18,6 +25,9 @@ func Initiate() {
 	// Initialize logger first
 	logger.Init()
 	logger.Log.Info("Restorant Platform Started")
+
+	cache.Init()
+	logger.Log.Info("Redis Initialized")
 
 	pusherclient.Init()
 	logger.Log.Info("Pusher initialized",
@@ -66,8 +76,40 @@ func Initiate() {
 		port = "8000"
 	}
 
-	if err := r.Run(":" + port); err != nil {
-		logger.Log.Error("failed to start server", "error", err)
+	// Create the HTTP server instance
+	server := &http.Server{
+		Addr:    ":" + port,
+		Handler: r,
 	}
 
+	// Start the server inside a separate goroutine
+	go func() {
+		log.Println("Server is starting on port", port)
+		if err := server.ListenAndServe(); err != nil {
+			log.Fatalf("server failed to listen: %v\n", err)
+		}
+	}()
+
+	// Create a channel to listen for OS signals
+	// SIGINT = Ctrl+C, SIGTERM = Sent by Kubernetes or Docker to terminate pods/containers
+	shutdownSignal := make(chan os.Signal, 1)
+	signal.Notify(shutdownSignal, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	// Block the main goroutine untill a signal is recieved
+	<-shutdownSignal
+	log.Println("shotdown signal recieved. starting graceful termination...")
+
+	// create a context with a timeout for the shutdown process
+	// this prevents the application from hanging indefinitely if a request stalls
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Trigger the graceful shutdown
+	// this stops accepting new connections and flushes current connection
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
+	}
+
+	// final cleanup(closing db connections, flushing logs)
+	log.Println("Cleanup complete, server exiting cleanly")
 }
